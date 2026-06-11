@@ -966,13 +966,16 @@ async function doLogin() {
   btn.textContent = '...'; btn.disabled = true;
 
   if (_registerMode) {
-    const { error } = await _supa.auth.signUp({
+    const { data: signUpData, error } = await _supa.auth.signUp({
       email, password: pass,
       options: { data: { name } }
     });
     if (error) { showLoginMsg(error.message, 'err'); btn.textContent='Cadastrar'; btn.disabled=false; return; }
-    showLoginMsg('Conta criada! Verifique seu e-mail para confirmar.', 'ok');
-    btn.textContent='Cadastrar'; btn.disabled=false;
+    // Auto login after signup
+    currentUser = signUpData.user;
+    await loadRemoteState();
+    showPage('home');
+    updateHomeUI();
   } else {
     const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
     if (error) { showLoginMsg('E-mail ou senha incorretos', 'err'); btn.textContent='Entrar'; btn.disabled=false; return; }
