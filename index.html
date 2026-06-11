@@ -425,6 +425,13 @@ input{font-family:inherit;}
      HOME
 ══════════════════════════════════════ -->
 <!-- SIDEBAR -->
+<div id="appLoader" style="position:fixed;inset:0;background:#0D0D0D;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px">
+  <div style="font:800 1.4rem 'Inter',sans-serif;letter-spacing:-1px">Alumi<span style="color:#EF4444">nas</span></div>
+  <div style="width:40px;height:3px;background:#222;border-radius:99px;overflow:hidden">
+    <div style="height:100%;background:#3B82F6;border-radius:99px;animation:loadbar 1.2s ease infinite" id="loaderBar"></div>
+  </div>
+</div>
+<style>@keyframes loadbar{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}</style>
 <nav class="sidebar" id="appSidebar" style="display:none">
   <div class="sidebar-logo">Alumi<span>nas</span><div class="sub">Treino de Produtos</div></div>
   <div class="sidebar-section">
@@ -447,7 +454,7 @@ input{font-family:inherit;}
   </div>
 </nav>
 <!-- ══ LOGIN ══ -->
-<div class="page on" id="login">
+<div class="page" id="login">
   <div class="login-logo">
     <div class="name">Alumi<span>nas</span></div>
     <div class="sub">Treino de Produtos</div>
@@ -468,23 +475,6 @@ input{font-family:inherit;}
 <!-- ══════════════════════════════════════
      HOME
 ══════════════════════════════════════ -->
-<!-- ══ LOGIN ══ -->
-<div class="page on" id="login" style="align-items:center;justify-content:center;padding:32px 24px;gap:20px;background:var(--paper)">
-  <div style="text-align:center">
-    <div style="font-size:2.2rem;font-weight:800;letter-spacing:-1.5px">Alumi<span style="color:var(--brick2)">nas</span></div>
-    <div style="font-size:.8rem;color:var(--smoke);margin-top:4px">Treino de Produtos</div>
-  </div>
-
-  <div style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px" id="loginForm">
-    <div id="loginMsg" style="display:none;padding:10px 14px;border-radius:var(--r);font-size:.8rem;font-weight:600"></div>
-    <input id="loginName" placeholder="Seu nome" style="display:none;background:#fff;border:1.5px solid var(--paper3);border-radius:var(--r);padding:0 14px;height:52px;font:600 1rem 'Space Grotesk',sans-serif;color:var(--ink);width:100%">
-    <input id="loginEmail" type="email" placeholder="E-mail corporativo" style="background:#fff;border:1.5px solid var(--paper3);border-radius:var(--r);padding:0 14px;height:52px;font:600 1rem 'Space Grotesk',sans-serif;color:var(--ink);width:100%">
-    <input id="loginPass" type="password" placeholder="Senha" style="background:#fff;border:1.5px solid var(--paper3);border-radius:var(--r);padding:0 14px;height:52px;font:600 1rem 'Space Grotesk',sans-serif;color:var(--ink);width:100%">
-    <button onclick="doLogin()" style="background:var(--brick);color:#fff;border:none;border-radius:var(--r);height:52px;font:700 .95rem 'Space Grotesk',sans-serif;width:100%" id="loginBtn">Entrar</button>
-    <button onclick="toggleRegister()" style="background:none;border:none;color:var(--smoke);font:600 .82rem 'Space Grotesk',sans-serif;padding:4px" id="toggleBtn">Não tem conta? Cadastrar</button>
-  </div>
-</div>
-
 <div class="page" id="home">
   <div class="home-tabs">
     <button class="htab active" onclick="switchTab('inicio')">Início</button>
@@ -829,7 +819,7 @@ input{font-family:inherit;}
 ══════════════════════════════════════ -->
 <div class="page" id="rankingPage">
   <div class="g-bar">
-    <button class="g-back" onclick="showPage('home');updateHomeUI()">← Voltar</button>
+    <button class="g-back" onclick="showApp();updateHomeUI()">← Voltar</button>
     <span class="g-mode">🏆 Ranking</span>
     <div></div>
   </div>
@@ -907,186 +897,146 @@ input{font-family:inherit;}
 <script>
 'use strict';
 
-// ── SUPABASE ──────────────────────────────────────────────────────
-const _supa = supabase.createClient('https://gtktvdnzinsewyhayzfx.supabase.co', 'sb_publishable_IKrFeKQQTkpaeSLCAPm-uw_7b3-lc6S');
+const _supa = supabase.createClient('https://gtktvdnzinsewyhayzfx.supabase.co','sb_publishable_IKrFeKQQTkpaeSLCAPm-uw_7b3-lc6S');
 let currentUser = null;
 
-function togglePass() {
-  const inp = document.getElementById('loginPass');
-  const btn = document.getElementById('eyeBtn');
-  if (inp.type === 'password') { inp.type='text';  btn.textContent='🙈'; }
-  else                         { inp.type='password'; btn.textContent='👁'; }
-}
-
 function showNav() {
-  const sb = document.getElementById('appSidebar');
-  const bn = document.getElementById('appBottomNav');
-  const isMobile = window.innerWidth < 769;
-  if (sb) sb.style.display = isMobile ? 'none' : 'flex';
-  if (bn) bn.style.display = isMobile ? 'flex' : 'none';
+  const sb=document.getElementById('appSidebar'), bn=document.getElementById('appBottomNav');
+  if(!sb||!bn) return;
+  if(window.innerWidth>=769){sb.style.display='flex';bn.style.display='none';}
+  else{sb.style.display='none';bn.style.display='flex';}
 }
-window.addEventListener('resize', showNav);
+window.addEventListener('resize',showNav);
 
-function navTo(pageId) {
-  const pages = ['home','rankingPage','indicatorsPage'];
-  pages.forEach(p => {
-    const el = document.getElementById(p);
-    if (el) el.classList.toggle('on', p === pageId);
+function navTo(id) {
+  ['home','rankingPage','indicatorsPage'].forEach(p=>{
+    const el=document.getElementById(p);
+    if(el){el.classList.toggle('on',p===id);el.style.display=p===id?'flex':'none';}
   });
-  ['home','rank','ind'].forEach(k => {
-    const pg = {home:'home',rank:'rankingPage',ind:'indicatorsPage'}[k];
-    const sb = document.getElementById('sb-'+k);
-    const bn = document.getElementById('bn-'+k);
-    if (sb) sb.classList.toggle('active', pg === pageId);
-    if (bn) bn.classList.toggle('active', pg === pageId);
+  const map={home:'home',rankingPage:'rank',indicatorsPage:'ind'};
+  Object.keys(map).forEach(pg=>{
+    const k=map[pg];
+    const sb=document.getElementById('sb-'+k), bn=document.getElementById('bn-'+k);
+    if(sb) sb.classList.toggle('active',pg===id);
+    if(bn) bn.classList.toggle('active',pg===id);
   });
-  if (pageId === 'rankingPage')    loadRankingPage();
-  if (pageId === 'indicatorsPage') renderIndicadores();
+  if(id==='rankingPage')    setTimeout(loadRankingPage,50);
+  if(id==='indicatorsPage') setTimeout(renderIndicadores,50);
+}
+
+function showLogin() {
+  ['home','rankingPage','indicatorsPage'].forEach(p=>{
+    const el=document.getElementById(p);
+    if(el){el.classList.remove('on');el.style.display='none';}
+  });
+  const sb=document.getElementById('appSidebar'), bn=document.getElementById('appBottomNav');
+  if(sb) sb.style.display='none';
+  if(bn) bn.style.display='none';
+  const lg=document.getElementById('login');
+  if(lg){lg.classList.add('on');lg.style.display='flex';}
+}
+
+function showApp() {
+  const lg=document.getElementById('login');
+  if(lg){lg.classList.remove('on');lg.style.display='none';}
+  showNav();
+  navTo('home');
+}
+
+function goHome() {
+  clearInterval(G.timer);
+  clearInterval(cdTimer);
+  showApp();
+  updateHomeUI();
 }
 
 async function initAuth() {
-  const { data: { session } } = await _supa.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    await loadRemoteState();
-    showNav(); navTo('home');
-  } else {
-    showPage('login');
-  }
+  _supa.auth.onAuthStateChange(async(event,session)=>{
+    const loader=document.getElementById('appLoader');
+    if(loader) loader.style.display='none';
+    if(session&&session.user){
+      currentUser=session.user;
+      if(event==='INITIAL_SESSION'){await loadRemoteState(); showApp(); updateHomeUI();}
+      else if(event==='SIGNED_IN'){showApp(); updateHomeUI();}
+    } else {
+      currentUser=null;
+      showLogin();
+    }
+  });
 }
 
-function showPage(id) {
-  // Only toggle login vs app pages
-  const loginEl = document.getElementById('login');
-  if (id === 'login') {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-    if (loginEl) loginEl.classList.add('on');
-    // hide nav
-    const sb = document.getElementById('appSidebar');
-    const bn = document.getElementById('appBottomNav');
-    if (sb) sb.style.display = 'none';
-    if (bn) bn.style.display = 'none';
-  } else {
-    if (loginEl) loginEl.classList.remove('on');
-    showNav();
-    navTo(id);
-  }
-}
-
-let _registerMode = false;
+let _regMode=false;
 function toggleRegister() {
-  _registerMode = !_registerMode;
-  document.getElementById('loginName').style.display  = _registerMode ? 'block' : 'none';
-  document.getElementById('loginBtn').textContent     = _registerMode ? 'Cadastrar' : 'Entrar';
-  document.getElementById('toggleBtn').textContent    = _registerMode ? 'Já tem conta? Entrar' : 'Não tem conta? Cadastrar';
-  showLoginMsg('', '');
+  _regMode=!_regMode;
+  const n=document.getElementById('loginName'),b=document.getElementById('loginBtn'),t=document.getElementById('toggleBtn');
+  if(n) n.style.display=_regMode?'block':'none';
+  if(b) b.textContent=_regMode?'Cadastrar':'Entrar';
+  if(t) t.textContent=_regMode?'Já tem conta? Entrar':'Não tem conta? Cadastrar';
+  setMsg('','');
 }
 
-function showLoginMsg(msg, type) {
-  const el = document.getElementById('loginMsg');
-  if (!msg) { el.style.display='none'; return; }
-  el.style.display = 'block';
-  el.style.background = type==='err' ? '#FDF0EE' : '#F0F7F3';
-  el.style.color      = type==='err' ? 'var(--brick2)' : 'var(--sage)';
-  el.textContent = msg;
+function setMsg(msg,type) {
+  const el=document.getElementById('loginMsg');
+  if(!el) return;
+  if(!msg){el.style.display='none';return;}
+  el.style.cssText='display:block;padding:8px 12px;border-radius:8px;font:600 .76rem Inter,sans-serif;'+(type==='err'?'background:rgba(239,68,68,.15);color:#EF4444;':'background:rgba(34,197,94,.15);color:#22C55E;');
+  el.textContent=msg;
 }
 
 async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const name  = document.getElementById('loginName').value.trim();
-  const btn   = document.getElementById('loginBtn');
-
-  if (!email || !pass) { showLoginMsg('Preencha e-mail e senha', 'err'); return; }
-  if (_registerMode && !name) { showLoginMsg('Digite seu nome', 'err'); return; }
-
-  btn.textContent = '...'; btn.disabled = true;
-
-  if (_registerMode) {
-    const { data: signUpData, error } = await _supa.auth.signUp({
-      email, password: pass,
-      options: { data: { name } }
-    });
-    if (error) { showLoginMsg(error.message, 'err'); btn.textContent='Cadastrar'; btn.disabled=false; return; }
-    // Auto login after signup
-    currentUser = signUpData.user;
-    await loadRemoteState();
-    showPage('home');
-    updateHomeUI();
+  const email=(document.getElementById('loginEmail')?.value||'').trim();
+  const pass=document.getElementById('loginPass')?.value||'';
+  const name=(document.getElementById('loginName')?.value||'').trim();
+  const btn=document.getElementById('loginBtn');
+  if(!email||!pass){setMsg('Preencha e-mail e senha','err');return;}
+  if(_regMode&&!name){setMsg('Digite seu nome','err');return;}
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  if(_regMode){
+    const{error}=await _supa.auth.signUp({email,password:pass,options:{data:{name}}});
+    if(error){setMsg(error.message,'err');if(btn){btn.textContent='Cadastrar';btn.disabled=false;}return;}
   } else {
-    const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
-    if (error) { showLoginMsg('E-mail ou senha incorretos', 'err'); btn.textContent='Entrar'; btn.disabled=false; return; }
-    currentUser = data.user;
-    await loadRemoteState();
-    showPage('home');
-    updateHomeUI();
+    const{error}=await _supa.auth.signInWithPassword({email,password:pass});
+    if(error){setMsg('E-mail ou senha incorretos','err');if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
   }
 }
 
 async function doLogout() {
   await _supa.auth.signOut();
-  currentUser = null;
-  S = { xp:0, streak:0, lastDay:'', achievements:[], stats:{}, history:[] };
-  showPage('login');
 }
 
-// ── REMOTE STATE ──────────────────────────────────────────────────
+function togglePass() {
+  const inp=document.getElementById('loginPass'),btn=document.getElementById('eyeBtn');
+  if(!inp) return;
+  inp.type=inp.type==='password'?'text':'password';
+  if(btn) btn.textContent=inp.type==='password'?'👁':'🙈';
+}
+
 async function loadRemoteState() {
-  if (!currentUser) return;
+  if(!currentUser) return;
   try {
-    // Load profile
-    const { data: prof } = await _supa.from('profiles').select('*').eq('id', currentUser.id).single();
-    if (prof) {
-      S.xp           = prof.xp || 0;
-      S.streak       = prof.streak || 0;
-      S.lastDay      = prof.last_day || '';
-      S.achievements = prof.achievements || [];
-    }
-    // Load product stats
-    const { data: pstats } = await _supa.from('product_stats').select('*').eq('user_id', currentUser.id);
-    if (pstats) {
-      pstats.forEach(row => {
-        S.stats[row.product_id] = { seen: row.seen, cor: row.correct, wr: row.wrong, lvl: row.lvl, nextRev: row.next_rev };
-      });
-    }
-    // Load session history
-    const { data: hist } = await _supa.from('sessions').select('*').eq('user_id', currentUser.id).order('played_at', { ascending: false }).limit(30);
-    if (hist) {
-      S.history = hist.map(h => ({ mode: h.mode, cor: h.correct, wr: h.wrong, pts: h.score, ts: new Date(h.played_at).getTime() }));
-    }
-  } catch(e) { console.error('loadRemoteState:', e); }
+    const{data:prof}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
+    if(prof){S.xp=prof.xp||0;S.streak=prof.streak||0;S.lastDay=prof.last_day||'';S.achievements=prof.achievements||[];}
+    const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
+    if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
+    const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(30);
+    if(hist) S.history=hist.map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
+  } catch(e){console.error('loadRemoteState:',e);}
 }
 
 async function syncProfile() {
-  if (!currentUser) return;
-  try {
-    await _supa.from('profiles').upsert({
-      id: currentUser.id, xp: S.xp, streak: S.streak,
-      last_day: S.lastDay, achievements: S.achievements
-    });
-  } catch(e) {}
+  if(!currentUser) return;
+  try{await _supa.from('profiles').upsert({id:currentUser.id,xp:S.xp,streak:S.streak,last_day:S.lastDay,achievements:S.achievements});}catch(e){}
 }
 
-async function syncProductStat(productId) {
-  if (!currentUser) return;
-  const st = S.stats[productId];
-  if (!st) return;
-  try {
-    await _supa.from('product_stats').upsert({
-      user_id: currentUser.id, product_id: productId,
-      seen: st.seen, correct: st.cor, wrong: st.wr, lvl: st.lvl, next_rev: st.nextRev
-    }, { onConflict: 'user_id,product_id' });
-  } catch(e) {}
+async function syncProductStat(pid) {
+  if(!currentUser) return;
+  const st=S.stats[pid]; if(!st) return;
+  try{await _supa.from('product_stats').upsert({user_id:currentUser.id,product_id:pid,seen:st.seen,correct:st.cor,wrong:st.wr,lvl:st.lvl,next_rev:st.nextRev},{onConflict:'user_id,product_id'});}catch(e){}
 }
 
 async function syncSession(round) {
-  if (!currentUser) return;
-  try {
-    await _supa.from('sessions').insert({
-      user_id: currentUser.id, mode: round.mode,
-      correct: round.cor, wrong: round.wr, score: round.pts
-    });
-  } catch(e) {}
+  if(!currentUser) return;
+  try{await _supa.from('sessions').insert({user_id:currentUser.id,mode:round.mode,correct:round.cor,wrong:round.wr,score:round.pts});}catch(e){}
 }
 
 // ── DATA ──────────────────────────────────────────────────────────
@@ -1197,7 +1147,7 @@ function show(id) {
 }
 function goHome() {
   clearInterval(G.timer);
-  showPage('home'); updateHomeUI();
+  showApp(); updateHomeUI();
 }
 
 // ── WEIGHT / QUEUE ───────────────────────────────────────────────────
@@ -2413,19 +2363,9 @@ function closeSheet() {
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────────
-function sidebarNav(pageId) {
-  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('sb-' + pageId.replace('Page',''));
-  if (btn) btn.classList.add('active');
-  showPage(pageId);
-}
-function bnavNav(pageId) {
-  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('bn-' + pageId.replace('Page',''));
-  if (btn) btn.classList.add('active');
-  showPage(pageId);
-}
-function showPage(id) {
+function sidebarNav(id){navTo(id);}
+function bnavNav(id){navTo(id);}
+function _showPage_unused(id) {
   ['home','rankingPage','indicatorsPage'].forEach(p => {
     const el = document.getElementById(p);
     if (el) el.classList.toggle('on', p === id);
