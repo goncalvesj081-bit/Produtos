@@ -2489,28 +2489,15 @@ async function loadRankingPage() {
   const list = document.getElementById('rankingList');
   if (!list) return;
   list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Carregando...</div>';
-  // Sync user separately so a upsert failure doesn't block the ranking query
-  try {
-    if (currentUser && typeof P !== 'undefined') {
-      const mastered = P.filter(p => dominated(p.id)).length;
-      const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
-      await _supa.from('profiles').upsert({
-        id: currentUser.id, name: uname, email: currentUser.email||'',
-        xp: S.xp, streak: S.streak,
-        last_day: S.lastDay, achievements: S.achievements
-      });
-    }
-  } catch(syncErr) { console.warn('sync:', syncErr.message); }
-
   try {
     const { data, error } = await _supa
       .from('profiles')
       .select('name, xp, streak, achievements')
-      .limit(200);
+      .order('xp', { ascending: false })
+      .limit(50);
 
     if (error) {
-      console.error('ranking query error:', error);
-      list.innerHTML = '<div style="text-align:center;color:var(--red);padding:32px 0;font-size:.78rem">Erro: ' + (error.message||JSON.stringify(error)) + '</div>';
+      list.innerHTML = '<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro: ' + error.message + '</div>';
       return;
     }
     if (!data || !data.length) {
@@ -2521,30 +2508,23 @@ async function loadRankingPage() {
     const medals = ['🥇','🥈','🥉'];
     const myName = currentUser ? (currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '') : '';
 
-    const byXP = [...data].filter(u => u.name && (u.xp||0) > 0).sort((a,b) => (b.xp||0)-(a.xp||0));
-    const byDom = [...data].filter(u => u.name && (u.mastered_count||0) > 0).sort((a,b) => (b.mastered_count||0)-(a.mastered_count||0));
-
-    function rankRow(u, i, valHtml) {
-      const isMe = u.name === myName;
-      return `<div class="rank-row${isMe?' me':''}">
-        <div class="rank-pos">${medals[i]||'#'+(i+1)}</div>
-        <div class="rank-info">
-          <div class="rank-uname">${u.name||'—'}${isMe?' (você)':''}</div>
-          <div class="rank-meta">Nv.${levelOf(u.xp||0)} · 🔥${u.streak||0} dias</div>
-        </div>
-        <div class="rank-xp">${valHtml}</div>
-      </div>`;
-    }
-
     list.innerHTML =
-      '<div style="font:700 .82rem Inter,sans-serif;color:var(--text2);padding:4px 0 8px">🏆 Ranking XP</div>' +
-      (byXP.length ? byXP.slice(0,20).map((u,i)=>rankRow(u,i,u.xp+' XP')).join('') : '<div style="color:var(--text3);font-size:.78rem;padding:8px 0">Nenhum dado ainda</div>') +
-      '<div style="font:700 .82rem Inter,sans-serif;color:var(--text2);padding:16px 0 8px;border-top:1px solid var(--line);margin-top:8px">🎯 Ranking Produtos Dominados</div>' +
-      (byDom.length ? byDom.slice(0,20).map((u,i)=>rankRow(u,i,(u.mastered_count||0)+' dominados')).join('') : '<div style="color:var(--text3);font-size:.78rem;padding:8px 0">Nenhum dado ainda</div>');
+      '<div style="font:700 .82rem Inter,sans-serif;color:var(--text2);padding:4px 0 10px">🏆 Ranking XP</div>' +
+      data.map((u, i) => {
+        const isMe = u.name === myName;
+        return `<div class="rank-row${isMe?' me':''}">
+          <div class="rank-pos">${medals[i]||'#'+(i+1)}</div>
+          <div class="rank-info">
+            <div class="rank-uname">${u.name||'—'}${isMe?' (você)':''}</div>
+            <div class="rank-meta">Nv.${levelOf(u.xp||0)} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas</div>
+          </div>
+          <div class="rank-xp">${u.xp||0} XP</div>
+        </div>`;
+      }).join('');
 
   } catch(e) {
     console.error('loadRankingPage:', e);
-    list.innerHTML = '<div style="text-align:center;color:var(--red);padding:32px 0">Erro: '+e.message+'</div>';
+    list.innerHTML = '<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro: ' + e.message + '</div>';
   }
 }
 
