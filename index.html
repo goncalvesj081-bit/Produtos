@@ -922,16 +922,19 @@ function showNav() {
 window.addEventListener('resize',showNav);
 
 function navTo(id) {
-  // close any open game page first
+  // Fechar qualquer página de jogo aberta
   ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'].forEach(gid=>{
     const el=document.getElementById(gid);
     if(el){el.classList.remove('on');el.style.display='none';}
   });
-  ['home','rankingPage','indicatorsPage'].forEach(p=>{
+  const mainPages = ['home','rankingPage','indicatorsPage'];
+  mainPages.forEach(p=>{
     const el=document.getElementById(p);
     if(el){
-      el.classList.toggle('on',p===id);
-      el.style.display=''; // let CSS .page.on handle it
+      const isActive = p === id;
+      el.classList.toggle('on', isActive);
+      // forçar display explícito para sobrescrever qualquer style inline
+      el.style.display = isActive ? 'flex' : 'none';
     }
   });
   const map={home:'home',rankingPage:'rank',indicatorsPage:'ind'};
@@ -941,27 +944,32 @@ function navTo(id) {
     if(sb) sb.classList.toggle('active',pg===id);
     if(bn) bn.classList.toggle('active',pg===id);
   });
-  if(id==='rankingPage')    setTimeout(()=>{ _rankData=null; loadRankingPage(); },50);
-  if(id==='indicatorsPage') setTimeout(renderIndicadores,50);
+  // Salva última aba para restaurar após F5
+  localStorage.setItem('lastPage', id);
+  if(id==='rankingPage')    setTimeout(loadRankingPage, 50);
+  if(id==='indicatorsPage') setTimeout(renderIndicadores, 50);
 }
 
 function showLogin() {
   ['home','rankingPage','indicatorsPage'].forEach(p=>{
     const el=document.getElementById(p);
-    if(el){el.classList.remove('on');el.style.display='';}
+    if(el){el.classList.remove('on');el.style.display='none';}
   });
   const sb=document.getElementById('appSidebar'), bn=document.getElementById('appBottomNav');
   if(sb) sb.style.display='none';
   if(bn) bn.style.display='none';
   const lg=document.getElementById('login');
-  if(lg){lg.classList.add('on');lg.style.display='';}
+  if(lg){lg.classList.add('on');lg.style.display='flex';}
 }
 
 function showApp() {
   const lg=document.getElementById('login');
   if(lg){lg.classList.remove('on');lg.style.display='';}
   showNav();
-  navTo('home');
+  // Só restaura se for uma aba principal válida — qualquer outro valor vai para home
+  const VALID_PAGES = ['home','rankingPage','indicatorsPage'];
+  const lastPage = localStorage.getItem('lastPage');
+  navTo(VALID_PAGES.includes(lastPage) ? lastPage : 'home');
 }
 
 function goHome() {
@@ -978,20 +986,47 @@ function goHome() {
 }
 
 async function initAuth() {
-  _supa.auth.onAuthStateChange(async(event,session)=>{
-    const loader=document.getElementById('appLoader');
-    if(loader) loader.style.display='none';
-    if(session&&session.user){
-      currentUser=session.user;
-      if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
-        await loadRemoteState();
-        showApp();
-        updateHomeUI();
-        // Retry user display after short delay (DOM might not be ready)
-        setTimeout(updateHomeUI, 300);
-      }
+  let authHandled = false;
+
+  async function handleSession(session) {
+    if (authHandled) return;
+    authHandled = true;
+
+    const loader = document.getElementById('appLoader');
+
+    if (session && session.user) {
+      currentUser = session.user;
+      load();
+      await loadRemoteState();
+      showApp();
+      updateHomeUI();
+      if (loader) loader.style.display = 'none';
+      const VALID_PAGES = ['home', 'rankingPage', 'indicatorsPage'];
+      const activePage = VALID_PAGES.includes(localStorage.getItem('lastPage'))
+        ? localStorage.getItem('lastPage') : 'home';
+      if (activePage === 'rankingPage')    setTimeout(loadRankingPage,   200);
+      if (activePage === 'indicatorsPage') setTimeout(renderIndicadores, 200);
+      setTimeout(updateHomeUI, 300);
     } else {
-      currentUser=null;
+      currentUser = null;
+      localStorage.removeItem('lastPage');
+      if (loader) loader.style.display = 'none';
+      showLogin();
+    }
+  }
+
+  // 1) Verificar sessão existente imediatamente (funciona com cache)
+  const { data: { session } } = await _supa.auth.getSession();
+  await handleSession(session);
+
+  // 2) Listener para login/logout futuros na mesma sessão
+  _supa.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && !authHandled) {
+      await handleSession(session);
+    } else if (event === 'SIGNED_OUT') {
+      authHandled = false;
+      currentUser = null;
+      localStorage.removeItem('lastPage');
       showLogin();
     }
   });
@@ -1045,24 +1080,28 @@ function togglePass() {
 
 async function loadRemoteState() {
   if(!currentUser) return;
-  try {
-    const{data:prof}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
-    if(prof){
-      S.xp           = prof.xp           || 0;
-      S.streak       = prof.streak       || 0;
-      S.bestStreak   = prof.best_streak  || prof.streak || 0;
-      S.totalSessions= prof.total_sessions||0;
-      S.totalAnswers = prof.total_answers ||0;
-      S.achievements = prof.achievements || [];
-      // Migrate and normalize lastDay to ISO
-      const ld = prof.last_day || '';
-      S.lastDay = ld.length > 10 ? new Date(ld).toISOString().slice(0,10) : ld;
-    }
-    const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
-    if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
-    const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(30);
-    if(hist) S.history=hist.map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
-  } catch(e){console.error('loadRemoteState:',e);}
+  // Timeout de 5s — se o Supabase não responder, continua com dados locais
+  const timeout = new Promise(resolve => setTimeout(resolve, 5000));
+  const fetch = async () => {
+    try {
+      const{data:prof}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
+      if(prof){
+        S.xp           = prof.xp           || 0;
+        S.streak       = prof.streak       || 0;
+        S.bestStreak   = prof.best_streak  || prof.streak || 0;
+        S.totalSessions= prof.total_sessions||0;
+        S.totalAnswers = prof.total_answers ||0;
+        S.achievements = prof.achievements || [];
+        const ld = prof.last_day || '';
+        S.lastDay = ld.length > 10 ? new Date(ld).toISOString().slice(0,10) : ld;
+      }
+      const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
+      if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
+      const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(30);
+      if(hist) S.history=hist.map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
+    } catch(e){ console.error('loadRemoteState:', e); }
+  };
+  await Promise.race([fetch(), timeout]);
 }
 
 async function syncProfile() {
@@ -1070,7 +1109,8 @@ async function syncProfile() {
   try {
     const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
     const mastered = typeof P !== 'undefined' ? P.filter(p => dominated(p.id)).length : 0;
-    await _supa.from('profiles').upsert({
+    console.log('[syncProfile] Salvando perfil...', { xp: S.xp, streak: S.streak, mastered, totalSessions: S.totalSessions, totalAnswers: S.totalAnswers });
+    const { error } = await _supa.from('profiles').upsert({
       id:           currentUser.id,
       name:         uname,
       email:        currentUser.email || '',
@@ -1083,18 +1123,30 @@ async function syncProfile() {
       total_sessions: S.totalSessions || 0,
       total_answers:  S.totalAnswers  || 0
     });
-  } catch(e) { console.error('syncProfile:', e); }
+    if (error) {
+      console.error('[syncProfile] Erro ao salvar perfil:', error);
+    } else {
+      console.log('[syncProfile] Perfil salvo com sucesso');
+    }
+  } catch(e) { console.error('[syncProfile] Exceção ao salvar perfil:', e); }
 }
 
 async function syncProductStat(pid) {
   if(!currentUser) return;
   const st=S.stats[pid]; if(!st) return;
-  try{await _supa.from('product_stats').upsert({user_id:currentUser.id,product_id:pid,seen:st.seen,correct:st.cor,wrong:st.wr,lvl:st.lvl,next_rev:st.nextRev},{onConflict:'user_id,product_id'});}catch(e){}
+  try{
+    await _supa.from('product_stats').upsert({user_id:currentUser.id,product_id:pid,seen:st.seen,correct:st.cor,wrong:st.wr,lvl:st.lvl,next_rev:st.nextRev},{onConflict:'user_id,product_id'});
+  }catch(e){ console.error('[syncProductStat] Erro ao salvar stat do produto', pid, e); }
 }
 
 async function syncSession(round) {
   if(!currentUser) return;
-  try{await _supa.from('sessions').insert({user_id:currentUser.id,mode:round.mode,correct:round.cor,wrong:round.wr,score:round.pts});}catch(e){}
+  try {
+    console.log('[syncSession] Salvando sessão...', round);
+    const { error } = await _supa.from('sessions').insert({user_id:currentUser.id,mode:round.mode,correct:round.cor,wrong:round.wr,score:round.pts});
+    if (error) console.error('[syncSession] Erro ao salvar sessão:', error);
+    else console.log('[syncSession] Sessão salva com sucesso');
+  } catch(e) { console.error('[syncSession] Exceção:', e); }
 }
 
 // ── DATA ──────────────────────────────────────────────────────────
@@ -1149,8 +1201,30 @@ function daysBetween(a, b) {
 function load() {
   try {
     const raw = localStorage.getItem('alu_state');
-    if (raw) S = {...S, ...JSON.parse(raw)};
-  } catch(e){}
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Validação básica: se não for objeto, descartar
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        S = {...S, ...parsed};
+      } else {
+        console.warn('[load] Estado inválido no localStorage — descartando');
+        localStorage.removeItem('alu_state');
+      }
+    }
+  } catch(e) {
+    console.warn('[load] Erro ao ler localStorage — descartando estado corrompido:', e);
+    localStorage.removeItem('alu_state');
+  }
+  // Garantir que campos numéricos são números
+  S.xp            = Number(S.xp)            || 0;
+  S.streak        = Number(S.streak)        || 0;
+  S.bestStreak    = Number(S.bestStreak)    || 0;
+  S.totalSessions = Number(S.totalSessions) || 0;
+  S.totalAnswers  = Number(S.totalAnswers)  || 0;
+  if (!Array.isArray(S.achievements)) S.achievements = [];
+  if (!Array.isArray(S.history))      S.history = [];
+  if (typeof S.stats !== 'object' || Array.isArray(S.stats)) S.stats = {};
+
   // Migrate old toDateString format to ISO
   if (S.lastDay && S.lastDay.length > 10) {
     try { S.lastDay = new Date(S.lastDay).toISOString().slice(0,10); } catch(e) { S.lastDay = ''; }
@@ -1159,14 +1233,11 @@ function load() {
   if (S.lastDay && S.lastDay !== today) {
     const diff = daysBetween(S.lastDay, today);
     if (diff === 1) {
-      // Studied yesterday → extend streak
       S.streak = (S.streak || 0) + 1;
       if (S.streak > (S.bestStreak||0)) S.bestStreak = S.streak;
     } else if (diff > 1) {
-      // Missed days → reset streak
       S.streak = 1;
     }
-    // diff === 0 → same day, keep streak
   } else if (!S.lastDay) {
     S.streak = 1;
   }
@@ -1778,6 +1849,8 @@ function saveRound() {
   if (!S.history) S.history = [];
   S.totalSessions = (S.totalSessions||0) + 1;
   S.totalAnswers  = (S.totalAnswers||0)  + G.cor + G.wr;
+  // Atualiza XP com os pontos da rodada (caso não tenha sido somado via addXP)
+  // addXP já foi chamado durante a rodada para cada acerto; aqui apenas garantimos save final
   const modeLabel = {quiz:'Foto→Nome', hunt:'Caça à Foto', flashcard:'Flashcard',
     type:'Digitação', survival:'Sobrevivência', battle:'60 Segundos', review:'Revisão',
     silhouette:'Silhueta', countdown:'Contagem', connect:'Conecta',
@@ -1786,8 +1859,10 @@ function saveRound() {
     mode: modeLabel, cor: G.cor, wr: G.wr,
     pts: G.score, ts: Date.now()
   });
-  S.history = S.history.slice(0, 30); // keep last 30
-  save();
+  S.history = S.history.slice(0, 30);
+  console.log('[saveRound] Encerrando rodada:', { mode: modeLabel, cor: G.cor, wr: G.wr, pts: G.score, totalSessions: S.totalSessions, totalAnswers: S.totalAnswers, xp: S.xp });
+  try { localStorage.setItem('alu_state', JSON.stringify(S)); } catch(e){}
+  syncProfile(); // garante persistência imediata com todos os campos atualizados
   syncSession(S.history[0]);
 }
 
@@ -2441,7 +2516,7 @@ function _showPage_unused(id) {
 }
 
 // ── RANKING ──────────────────────────────────────────────────────
-let _rankData = null; // cache para não buscar toda troca de aba
+let _rankData = null;
 let _rankTab  = 'xp';
 
 function switchRankTab(tab) {
@@ -2451,6 +2526,7 @@ function switchRankTab(tab) {
     if (el) el.classList.toggle('rtab-active', t === tab);
   });
   if (_rankData) renderRankList(_rankData);
+  else loadRankingPage();
 }
 
 function rankScore(u) {
@@ -2513,18 +2589,36 @@ async function loadRankingPage() {
   const list = document.getElementById('rankingList');
   if (!list) return;
 
-  // Se já temos cache, só re-renderiza
-  if (_rankData) { renderRankList(_rankData); return; }
+  // Sem cache — sempre busca dados frescos
+  _rankData = null;
 
-  list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Carregando...</div>';
+  // Verificar se usuário está autenticado antes de tentar
+  if (!currentUser) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Aguardando autenticação...</div>';
+    setTimeout(() => {
+      if (currentUser && document.getElementById('rankingPage')?.classList.contains('on')) {
+        loadRankingPage();
+      }
+    }, 1000);
+    return;
+  }
+
+  list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Carregando ranking...</div>';
   try {
+    console.log('[loadRankingPage] Buscando dados do ranking...');
     const { data, error } = await _supa
       .from('profiles')
       .select('name, xp, streak, achievements, mastered_count')
+      .order('xp', { ascending: false })
       .limit(100);
 
     if (error) {
-      list.innerHTML = '<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro: ' + error.message + '</div>';
+      console.error('[loadRankingPage] Erro ao buscar ranking:', error);
+      let msg = 'Erro ao carregar ranking: ' + error.message;
+      if (error.code === 'PGRST301' || error.message?.includes('JWT')) msg = 'Sessão expirada — faça login novamente.';
+      else if (error.code === '42501') msg = 'Sem permissão para ler o ranking. Verifique as políticas RLS.';
+      else if (error.code === '42703') msg = 'Coluna não encontrada na tabela profiles.';
+      list.innerHTML = `<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem;background:var(--red2);border-radius:var(--r);border:1px solid var(--red)">${msg}</div>`;
       return;
     }
     if (!data || !data.length) {
@@ -2532,16 +2626,31 @@ async function loadRankingPage() {
       return;
     }
 
+    console.log('[loadRankingPage] Ranking carregado:', data.length, 'usuários');
     _rankData = data;
     renderRankList(data);
 
   } catch(e) {
-    console.error('loadRankingPage:', e);
-    list.innerHTML = '<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro: ' + e.message + '</div>';
+    console.error('[loadRankingPage] Exceção:', e);
+    list.innerHTML = `<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro inesperado: ${e.message}</div>`;
   }
 }
 
 initAuth();
+
+// Auto-recuperação: se após 8s nenhuma página estiver visível, limpa localStorage e recarrega
+setTimeout(() => {
+  const anyVisible = ['home','rankingPage','indicatorsPage','login'].some(id => {
+    const el = document.getElementById(id);
+    return el && el.classList.contains('on');
+  });
+  if (!anyVisible) {
+    console.warn('[auto-recovery] Tela em branco detectada — limpando localStorage e recarregando');
+    localStorage.removeItem('lastPage');
+    localStorage.removeItem('alu_state');
+    window.location.reload();
+  }
+}, 8000);
 </script>
 </body>
 </html>
