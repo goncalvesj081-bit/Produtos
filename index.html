@@ -911,6 +911,8 @@ input{font-family:inherit;}
 'use strict';
 
 const _supa = supabase.createClient('https://gtktvdnzinsewyhayzfx.supabase.co','sb_publishable_IKrFeKQQTkpaeSLCAPm-uw_7b3-lc6S');
+// Flag: só permite syncProfile após loadRemoteState ter completado com sucesso
+let _remoteLoaded = false;
 let currentUser = null;
 
 function showNav() {
@@ -1080,18 +1082,23 @@ function togglePass() {
 
 async function loadRemoteState() {
   if(!currentUser) return;
-  // Timeout de 5s — se o Supabase não responder, continua com dados locais
+  _remoteLoaded = false; // reset: dados locais ainda não confirmados com servidor
   const timeout = new Promise(resolve => setTimeout(resolve, 5000));
   const fetch = async () => {
     try {
-      const{data:prof}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
+      const{data:prof, error:profErr}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
+      if(profErr) { console.error('loadRemoteState profiles:', profErr); }
       if(prof){
-        S.xp           = prof.xp           || 0;
-        S.streak       = prof.streak       || 0;
-        S.bestStreak   = prof.best_streak  || prof.streak || 0;
-        S.totalSessions= prof.total_sessions||0;
-        S.totalAnswers = prof.total_answers ||0;
-        S.achievements = prof.achievements || [];
+        // Só sobrescrever se o valor remoto for MAIOR que o local (proteção contra reset)
+        S.xp            = Math.max(S.xp || 0,            prof.xp            || 0);
+        S.streak        = Math.max(S.streak || 0,        prof.streak        || 0);
+        S.bestStreak    = Math.max(S.bestStreak || 0,    prof.best_streak   || 0);
+        S.totalSessions = Math.max(S.totalSessions || 0, prof.total_sessions|| 0);
+        S.totalAnswers  = Math.max(S.totalAnswers || 0,  prof.total_answers || 0);
+        // achievements: merge (união dos dois arrays)
+        const remoteAchs = prof.achievements || [];
+        const localAchs  = S.achievements    || [];
+        S.achievements = [...new Set([...localAchs, ...remoteAchs])];
         const ld = prof.last_day || '';
         S.lastDay = ld.length > 10 ? new Date(ld).toISOString().slice(0,10) : ld;
       }
@@ -1099,26 +1106,43 @@ async function loadRemoteState() {
       if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
       const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(30);
       if(hist) S.history=hist.map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
+      _remoteLoaded = true; // dados remotos carregados com sucesso
+      console.log('[loadRemoteState] OK — xp:', S.xp, 'sessions:', S.totalSessions);
     } catch(e){ console.error('loadRemoteState:', e); }
   };
   await Promise.race([fetch(), timeout]);
+  // Se timeout sem carregar, continua com dados locais mas NÃO marca como loaded
+  // para evitar sobrescrever o servidor com zeros
+  if (!_remoteLoaded) {
+    console.warn('[loadRemoteState] Timeout — usando dados locais, syncProfile bloqueado');
+  }
 }
 
 async function syncProfile() {
   if(!currentUser) return;
+  // PROTEÇÃO CRÍTICA: nunca salvar antes de confirmar dados remotos
+  // Evita sobrescrever servidor com zeros quando abre em novo dispositivo
+  if(!_remoteLoaded) {
+    console.warn('[syncProfile] Bloqueado — dados remotos ainda não confirmados. Tentando carregar primeiro...');
+    await loadRemoteState();
+    if(!_remoteLoaded) {
+      console.error('[syncProfile] Abortado — não foi possível confirmar dados remotos.');
+      return;
+    }
+  }
   try {
     const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
     const mastered = typeof P !== 'undefined' ? P.filter(p => dominated(p.id)).length : 0;
     console.log('[syncProfile] Salvando perfil...', { xp: S.xp, streak: S.streak, mastered, totalSessions: S.totalSessions, totalAnswers: S.totalAnswers });
     const { error } = await _supa.from('profiles').upsert({
-      id:           currentUser.id,
-      name:         uname,
-      email:        currentUser.email || '',
-      xp:           S.xp,
-      streak:       S.streak,
-      best_streak:  S.bestStreak || 0,
-      last_day:     S.lastDay,
-      achievements: S.achievements,
+      id:             currentUser.id,
+      name:           uname,
+      email:          currentUser.email || '',
+      xp:             S.xp,
+      streak:         S.streak,
+      best_streak:    S.bestStreak    || 0,
+      last_day:       S.lastDay,
+      achievements:   S.achievements,
       mastered_count: mastered,
       total_sessions: S.totalSessions || 0,
       total_answers:  S.totalAnswers  || 0
