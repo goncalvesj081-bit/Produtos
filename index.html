@@ -2505,7 +2505,7 @@ async function loadRankingPage() {
   try {
     const { data, error } = await _supa
       .from('profiles')
-      .select('name, xp, streak, best_streak, achievements, mastered_count')
+      .select('name, xp, streak, achievements')
       .limit(200);
 
     if (error) {
