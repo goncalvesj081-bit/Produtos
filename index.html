@@ -640,6 +640,17 @@ input{font-family:inherit;}
 <div class="page" id="indicatorsPage" style="background:var(--bg);padding:20px 20px 80px;gap:16px;overflow-y:auto">
   <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">📊 Indicadores</div>
 
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="ind-card2"><div class="ind-card-title">XP Total</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--gold)" id="statXP">0</div></div>
+    <div class="ind-card2"><div class="ind-card-title">Nível</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--blue)" id="statLvl">1</div></div>
+    <div class="ind-card2"><div class="ind-card-title">Dominados</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--green)" id="statDom">0</div></div>
+    <div class="ind-card2"><div class="ind-card-title">Taxa de Acerto</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--blue)" id="statPctBig">—</div></div>
+    <div class="ind-card2"><div class="ind-card-title">🔥 Streak Atual</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--orange)" id="statStreak">0</div></div>
+    <div class="ind-card2"><div class="ind-card-title">🏅 Melhor Streak</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--orange)" id="statBestStreak">0</div></div>
+    <div class="ind-card2"><div class="ind-card-title">Total Treinos</div><div style="font:800 1.4rem 'JetBrains Mono',monospace" id="statSessions">0</div></div>
+    <div class="ind-card2"><div class="ind-card-title">Total Respostas</div><div style="font:800 1.4rem 'JetBrains Mono',monospace" id="statAnswers">0</div></div>
+  </div>
+
   <div class="ind-card2">
     <div class="ind-card-title">Progresso geral</div>
     <div>
@@ -1024,7 +1035,17 @@ async function loadRemoteState() {
   if(!currentUser) return;
   try {
     const{data:prof}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
-    if(prof){S.xp=prof.xp||0;S.streak=prof.streak||0;S.lastDay=prof.last_day||'';S.achievements=prof.achievements||[];}
+    if(prof){
+      S.xp           = prof.xp           || 0;
+      S.streak       = prof.streak       || 0;
+      S.bestStreak   = prof.best_streak  || prof.streak || 0;
+      S.totalSessions= prof.total_sessions||0;
+      S.totalAnswers = prof.total_answers ||0;
+      S.achievements = prof.achievements || [];
+      // Migrate and normalize lastDay to ISO
+      const ld = prof.last_day || '';
+      S.lastDay = ld.length > 10 ? new Date(ld).toISOString().slice(0,10) : ld;
+    }
     const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
     if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
     const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(30);
@@ -1034,7 +1055,23 @@ async function loadRemoteState() {
 
 async function syncProfile() {
   if(!currentUser) return;
-  try{await _supa.from('profiles').upsert({id:currentUser.id,xp:S.xp,streak:S.streak,last_day:S.lastDay,achievements:S.achievements});}catch(e){}
+  try {
+    const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
+    const mastered = typeof P !== 'undefined' ? P.filter(p => dominated(p.id)).length : 0;
+    await _supa.from('profiles').upsert({
+      id:           currentUser.id,
+      name:         uname,
+      email:        currentUser.email || '',
+      xp:           S.xp,
+      streak:       S.streak,
+      best_streak:  S.bestStreak || 0,
+      last_day:     S.lastDay,
+      achievements: S.achievements,
+      mastered_count: mastered,
+      total_sessions: S.totalSessions || 0,
+      total_answers:  S.totalAnswers  || 0
+    });
+  } catch(e) { console.error('syncProfile:', e); }
 }
 
 async function syncProductStat(pid) {
@@ -1071,8 +1108,9 @@ const ACHS = [
 const LEVELS = [0,100,250,500,1000,2000,4000,8000,15000,30000];
 
 let S = {
-  xp:0, streak:0, lastDay:'', achievements:[],
-  stats:{},  // id -> {seen,cor,wr,lvl,nextRev}
+  xp:0, streak:0, bestStreak:0, lastDay:'',
+  achievements:[], stats:{}, history:[],
+  totalSessions:0, totalAnswers:0,
   rankings:[]
 };
 let G = {
@@ -1085,16 +1123,40 @@ function save() {
   try { localStorage.setItem('alu_state', JSON.stringify(S)); } catch(e){}
   syncProfile();
 }
+function isoToday() {
+  return new Date().toISOString().slice(0, 10); // "2026-06-11"
+}
+
+function daysBetween(a, b) {
+  // Compare only YYYY-MM-DD strings, no time component
+  const da = new Date(a + 'T00:00:00Z');
+  const db = new Date(b + 'T00:00:00Z');
+  return Math.round((db - da) / 86400000);
+}
+
 function load() {
   try {
     const raw = localStorage.getItem('alu_state');
     if (raw) S = {...S, ...JSON.parse(raw)};
   } catch(e){}
-  const today = new Date().toDateString();
+  // Migrate old toDateString format to ISO
+  if (S.lastDay && S.lastDay.length > 10) {
+    try { S.lastDay = new Date(S.lastDay).toISOString().slice(0,10); } catch(e) { S.lastDay = ''; }
+  }
+  const today = isoToday();
   if (S.lastDay && S.lastDay !== today) {
-    const d = (Date.now() - new Date(S.lastDay)) / 86400000;
-    if (d < 1.5) S.streak = (S.streak||0) + 1;
-    else if (d > 1.5) S.streak = 0;
+    const diff = daysBetween(S.lastDay, today);
+    if (diff === 1) {
+      // Studied yesterday → extend streak
+      S.streak = (S.streak || 0) + 1;
+      if (S.streak > (S.bestStreak||0)) S.bestStreak = S.streak;
+    } else if (diff > 1) {
+      // Missed days → reset streak
+      S.streak = 1;
+    }
+    // diff === 0 → same day, keep streak
+  } else if (!S.lastDay) {
+    S.streak = 1;
   }
   if (S.lastDay !== today) { S.lastDay = today; save(); }
 }
@@ -1498,11 +1560,13 @@ function flipFC() {
   }, 250);
 }
 function fcAns(v, pid) {
-  const pts = v===2?10:v===1?3:0;
-  G.score += pts; if(pts) addXP(pts);
-  if (v===2) G.cor++; else if (v===0) G.wr++;
-  updateStat(pid, v>=1);
-  checkAchs();
+  // Flashcard NÃO gera XP — serve apenas para aprendizado e repetição espaçada
+  if (v===2) { G.cor++; }
+  else if (v===0) { G.wr++; }
+  // Atualiza domínio: "Sei bem"=correto, "Mais ou menos"=neutro(não penaliza), "Não sei"=errado
+  if (v===2) updateStat(pid, true);
+  else if (v===0) updateStat(pid, false);
+  // v===1 (quase): mantém nível, não atualiza stat
   G.cur++;
   renderFC();
 }
@@ -1756,6 +1820,8 @@ function switchTab(tab) {
 // ── HISTORY SAVE ─────────────────────────────────────────────────────
 function saveRound() {
   if (!S.history) S.history = [];
+  S.totalSessions = (S.totalSessions||0) + 1;
+  S.totalAnswers  = (S.totalAnswers||0)  + G.cor + G.wr;
   const modeLabel = {quiz:'Foto→Nome', hunt:'Caça à Foto', flashcard:'Flashcard',
     type:'Digitação', survival:'Sobrevivência', battle:'60 Segundos', review:'Revisão',
     silhouette:'Silhueta', countdown:'Contagem', connect:'Conecta',
@@ -1774,6 +1840,19 @@ function renderIndicadores() {
   const mastered = P.filter(p => dominated(p.id)).length;
   const total    = P.length;
   const pct      = Math.round(mastered / total * 100);
+  let totAns=0, totCor=0;
+  Object.values(S.stats).forEach(st => { totAns+=st.seen; totCor+=st.cor; });
+
+  // Stats grid
+  const set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('statXP',          S.xp);
+  set('statLvl',         'Nv. ' + levelOf(S.xp));
+  set('statDom',         mastered);
+  set('statPctBig',      totAns ? Math.round(totCor/totAns*100)+'%' : '—');
+  set('statStreak',      (S.streak||0) + ' dias');
+  set('statBestStreak',  (S.bestStreak||0) + ' dias');
+  set('statSessions',    S.totalSessions||0);
+  set('statAnswers',     S.totalAnswers||0);
 
   document.getElementById('indMastered').textContent = mastered;
   document.getElementById('indTotal').textContent    = total;
@@ -2407,36 +2486,61 @@ function _showPage_unused(id) {
 
 // ── RANKING ──────────────────────────────────────────────────────
 async function loadRankingPage() {
-  const list = document.getElementById('rankingList'); if(!list) return;
+  const list = document.getElementById('rankingList');
+  if (!list) return;
   list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Carregando...</div>';
-
   try {
+    // Sync current user before loading
+    if (currentUser && typeof P !== 'undefined') {
+      const mastered = P.filter(p => dominated(p.id)).length;
+      const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
+      await _supa.from('profiles').upsert({
+        id: currentUser.id, name: uname, email: currentUser.email||'',
+        xp: S.xp, streak: S.streak, best_streak: S.bestStreak||0,
+        last_day: S.lastDay, achievements: S.achievements,
+        mastered_count: mastered,
+        total_sessions: S.totalSessions||0,
+        total_answers: S.totalAnswers||0
+      });
+    }
+
     const { data, error } = await _supa
       .from('profiles')
-      .select('name, xp, streak, achievements')
-      .order('xp', { ascending: false })
-      .limit(50);
+      .select('name, xp, streak, best_streak, achievements, mastered_count')
+      .limit(200);
 
-    if (error || !data.length) {
+    if (error || !data || !data.length) {
       list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0">Nenhum dado ainda</div>';
       return;
     }
 
     const medals = ['🥇','🥈','🥉'];
-    list.innerHTML = data.map((u, i) => {
-      const lv = levelOf(u.xp);
-      const isMe = currentUser && u.name === (currentUser.user_metadata?.name || currentUser.email?.split('@')[0]);
+    const myName = currentUser ? (currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '') : '';
+
+    const byXP = [...data].filter(u => u.name && (u.xp||0) > 0).sort((a,b) => (b.xp||0)-(a.xp||0));
+    const byDom = [...data].filter(u => u.name && (u.mastered_count||0) > 0).sort((a,b) => (b.mastered_count||0)-(a.mastered_count||0));
+
+    function rankRow(u, i, valHtml) {
+      const isMe = u.name === myName;
       return `<div class="rank-row${isMe?' me':''}">
-        <div class="rank-pos">${medals[i] || ('#'+(i+1))}</div>
+        <div class="rank-pos">${medals[i]||'#'+(i+1)}</div>
         <div class="rank-info">
-          <div class="rank-uname">${u.name}${isMe?' (você)':''}</div>
-          <div class="rank-meta">Nível ${lv} · 🔥 ${u.streak||0} dias · ${(u.achievements||[]).length} conquistas</div>
+          <div class="rank-uname">${u.name||'—'}${isMe?' (você)':''}</div>
+          <div class="rank-meta">Nv.${levelOf(u.xp||0)} · 🔥${u.streak||0} dias</div>
         </div>
-        <div class="rank-xp">${u.xp} XP</div>
+        <div class="rank-xp">${valHtml}</div>
       </div>`;
-    }).join('');
+    }
+
+    list.innerHTML =
+      '<div style="font:700 .82rem Inter,sans-serif;color:var(--text2);padding:4px 0 8px">🏆 Ranking XP</div>' +
+      (byXP.length ? byXP.slice(0,20).map((u,i)=>rankRow(u,i,u.xp+' XP')).join('') : '<div style="color:var(--text3);font-size:.78rem;padding:8px 0">Nenhum dado ainda</div>') +
+      '<div style="font:700 .82rem Inter,sans-serif;color:var(--text2);padding:16px 0 8px;border-top:1px solid var(--line);margin-top:8px">🎯 Ranking Produtos Dominados</div>' +
+      (byDom.length ? byDom.slice(0,20).map((u,i)=>rankRow(u,i,(u.mastered_count||0)+' dominados')).join('') : '<div style="color:var(--text3);font-size:.78rem;padding:8px 0">Nenhum dado ainda</div>');
+
   } catch(e) {
-    list.innerHTML = '<div style="text-align:center;color:var(--brick2);padding:32px 0">Erro ao carregar ranking</div>';
+    console.error('loadRankingPage:', e);
+    list.innerHTML = '<div style="text-align:center;color:var(--red);padding:32px 0">Erro: '+e.message+'</div>';
   }
 }
 
