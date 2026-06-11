@@ -1011,7 +1011,7 @@ async function doLogin() {
     // Auto login after signup
     currentUser = signUpData.user;
     await loadRemoteState();
-    showMainPage('home');
+    showPage('home');
     updateHomeUI();
   } else {
     const { data, error } = await _supa.auth.signInWithPassword({ email, password: pass });
@@ -1197,7 +1197,7 @@ function show(id) {
 }
 function goHome() {
   clearInterval(G.timer);
-  showMainPage('home'); updateHomeUI();
+  showPage('home'); updateHomeUI();
 }
 
 // ── WEIGHT / QUEUE ───────────────────────────────────────────────────
@@ -2417,15 +2417,15 @@ function sidebarNav(pageId) {
   document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('sb-' + pageId.replace('Page',''));
   if (btn) btn.classList.add('active');
-  showMainPage(pageId);
+  showPage(pageId);
 }
 function bnavNav(pageId) {
   document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('bn-' + pageId.replace('Page',''));
   if (btn) btn.classList.add('active');
-  showMainPage(pageId);
+  showPage(pageId);
 }
-function showMainPage(id) {
+function showPage(id) {
   ['home','rankingPage','indicatorsPage'].forEach(p => {
     const el = document.getElementById(p);
     if (el) el.classList.toggle('on', p === id);
