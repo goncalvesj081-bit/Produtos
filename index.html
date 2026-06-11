@@ -89,7 +89,7 @@ input{font-family:inherit;}
 
 /* HOME LAYOUT */
 #home{background:var(--bg);overflow-y:auto;}
-#home,#rankingPage,#indicatorsPage,#result{
+#home,#rankingPage,#indicatorsPage{
   padding:16px 16px 80px;gap:14px;
 }
 
@@ -416,7 +416,7 @@ input{font-family:inherit;}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:99px;}
 
 /* ── HOME FIXES ── */
-#home { padding: 20px 24px 80px; gap: 14px; overflow-y: auto; }
+#home { padding: 20px 24px 80px; gap: 14px; overflow-y: auto; flex-direction: column; }
 
 /* hide old home-brand on desktop (sidebar has the logo) */
 @media(min-width:769px) {
@@ -915,7 +915,10 @@ function navTo(id) {
   });
   ['home','rankingPage','indicatorsPage'].forEach(p=>{
     const el=document.getElementById(p);
-    if(el){el.classList.toggle('on',p===id);el.style.display=p===id?'flex':'none';}
+    if(el){
+      el.classList.toggle('on',p===id);
+      el.style.display=''; // let CSS .page.on handle it
+    }
   });
   const map={home:'home',rankingPage:'rank',indicatorsPage:'ind'};
   Object.keys(map).forEach(pg=>{
@@ -931,18 +934,18 @@ function navTo(id) {
 function showLogin() {
   ['home','rankingPage','indicatorsPage'].forEach(p=>{
     const el=document.getElementById(p);
-    if(el){el.classList.remove('on');el.style.display='none';}
+    if(el){el.classList.remove('on');el.style.display='';}
   });
   const sb=document.getElementById('appSidebar'), bn=document.getElementById('appBottomNav');
   if(sb) sb.style.display='none';
   if(bn) bn.style.display='none';
   const lg=document.getElementById('login');
-  if(lg){lg.classList.add('on');lg.style.display='flex';}
+  if(lg){lg.classList.add('on');lg.style.display='';}
 }
 
 function showApp() {
   const lg=document.getElementById('login');
-  if(lg){lg.classList.remove('on');lg.style.display='none';}
+  if(lg){lg.classList.remove('on');lg.style.display='';}
   showNav();
   navTo('home');
 }
