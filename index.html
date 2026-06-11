@@ -456,7 +456,10 @@ input{font-family:inherit;}
     <div class="login-msg" id="loginMsg"></div>
     <input class="login-input" id="loginName" placeholder="Seu nome" style="display:none">
     <input class="login-input" type="email" id="loginEmail" placeholder="E-mail corporativo">
-    <input class="login-input" type="password" id="loginPass" placeholder="Senha">
+    <div style="position:relative">
+      <input class="login-input" type="password" id="loginPass" placeholder="Senha" style="padding-right:44px;width:100%">
+      <button onclick="togglePass()" type="button" style="position:absolute;right:0;top:0;height:44px;width:44px;background:none;border:none;color:var(--text3);font-size:1rem;display:flex;align-items:center;justify-content:center" id="eyeBtn">👁</button>
+    </div>
     <button class="login-btn" onclick="doLogin()" id="loginBtn">Entrar</button>
     <button class="login-toggle" onclick="toggleRegister()" id="toggleBtn">Não tem conta? Cadastrar</button>
   </div>
@@ -907,6 +910,13 @@ input{font-family:inherit;}
 // ── SUPABASE ──────────────────────────────────────────────────────
 const _supa = supabase.createClient('https://gtktvdnzinsewyhayzfx.supabase.co', 'sb_publishable_IKrFeKQQTkpaeSLCAPm-uw_7b3-lc6S');
 let currentUser = null;
+
+function togglePass() {
+  const inp = document.getElementById('loginPass');
+  const btn = document.getElementById('eyeBtn');
+  if (inp.type === 'password') { inp.type='text';  btn.textContent='🙈'; }
+  else                         { inp.type='password'; btn.textContent='👁'; }
+}
 
 function showNav() {
   const sb = document.getElementById('appSidebar');
