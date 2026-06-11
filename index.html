@@ -483,15 +483,10 @@ input{font-family:inherit;}
 }
 
 .home-tabs { display: none !important; }
-
-.home-tabs { display: none !important; }
 .htab { display: none; }
-.section-label { font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);grid-column:1/-1; }
 
-.brand-name { font:800 1.5rem 'Inter',sans-serif; letter-spacing:-1px; line-height:1; }
-.brand-name span { color:var(--red); }
-.brand-sub  { font-size:.72rem; color:var(--text3); font-weight:500; }
-.level-pill { background:var(--blue2);color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;font:700 .72rem 'JetBrains Mono',monospace; }
+/* tab-inicio is not a tab anymore - always show its content */
+#tab-inicio { display: flex !important; flex-direction: column; gap: 14px; }
 </style>
 </head>
 <body>
@@ -1178,22 +1173,25 @@ function xpForNext(xp) {
 }
 
 function updateHomeUI() {
+  try {
   const lv = levelOf(S.xp);
-  document.getElementById('homeLvl').textContent = 'Nv. ' + lv;
-  document.getElementById('xpCur').textContent   = S.xp + ' XP';
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  const setW = (id,v) => { const el=document.getElementById(id); if(el) el.style.width=v; };
+  set('homeLvl', 'Nv. ' + lv);
+  set('xpCur', S.xp + ' XP');
   const nx = xpForNext(S.xp);
-  document.getElementById('xpNext').textContent  = nx ? nx + ' XP p/ próx. nível' : 'Nível máximo';
+  set('xpNext', nx ? nx + ' XP p/ próx. nível' : 'Nível máximo');
   const prev = LEVELS[lv-1]||0;
   const pct  = nx ? Math.round((S.xp-prev)/(nx-prev)*100) : 100;
-  document.getElementById('xpBar').style.width   = pct + '%';
+  setW('xpBar', pct + '%');
 
   // stats
   let total=0, cor=0;
   Object.values(S.stats).forEach(st => { total+=st.seen; cor+=st.cor; });
   const mastered = P.filter(p => dominated(p.id)).length;
-  document.getElementById('stPct').textContent     = total ? Math.round(cor/total*100)+'%' : '—';
-  document.getElementById('stMastered').textContent= mastered;
-  document.getElementById('stRemain').textContent  = P.length - mastered;
+  set('stPct',      total ? Math.round(cor/total*100)+'%' : '—');
+  set('stMastered', mastered);
+  set('stRemain',   P.length - mastered);
   const _sEl = document.getElementById('stStreak'); if(_sEl) _sEl.textContent=(S.streak||0)+'🔥';
 
   // product count + user name + sidebar
@@ -1209,10 +1207,11 @@ function updateHomeUI() {
 
   // achievements
   const wrap = document.getElementById('achWrap');
-  wrap.innerHTML = ACHS.map(a => {
+  if (wrap) wrap.innerHTML = ACHS.map(a => {
     const ok = S.achievements.includes(a.id);
     return `<div class="ach-pill ${ok?'earned':''}">${a.icon} ${a.name} ${ok?'✓':'🔒'}</div>`;
   }).join('');
+  } catch(e) { console.warn('updateHomeUI:', e); }
 }
 
 // ── NAV ─────────────────────────────────────────────────────────────
@@ -1233,11 +1232,6 @@ function show(id) {
     if (bn) bn.style.display = 'none';
   }
 }
-function goHome() {
-  clearInterval(G.timer);
-  showApp(); updateHomeUI();
-}
-
 // ── WEIGHT / QUEUE ───────────────────────────────────────────────────
 function weight(id) {
   const st = S.stats[id];
@@ -1463,54 +1457,6 @@ function updateQZHeader() {
   } else { lv.innerHTML=''; }
 }
 
-function answerQ(idx, correct, pid) {
-  if (G.answered) return;
-  G.answered = true;
-  document.querySelectorAll('.q-opt').forEach(b => b.disabled = true);
-
-  const btn = document.getElementById('opt'+idx);
-  const card = document.getElementById('qCard');
-
-  if (correct) {
-    btn.classList.add('correct');
-    card.classList.add('correct');
-    G.cor++; G.combo++;
-    const pts = 10 + (G.combo > 1 ? G.combo*2 : 0);
-    G.score += pts; addXP(pts);
-    floatPts(pts, 'var(--sage)');
-    const wasDom = dominated(pid);
-  } else {
-    btn.classList.add('wrong');
-    card.classList.add('wrong');
-    // Highlight correct
-    document.querySelectorAll('.q-opt').forEach((b,i) => {
-      const pid2 = G.queue[G.cur];
-      if (b.textContent.trim().includes(pid2.name)) b.classList.add('correct');
-    });
-    G.wr++; G.combo=0;
-    if (G.mode==='survival') {
-      G.lives--;
-      if (G.lives <= 0) { setTimeout(endGame, 900); return; }
-    }
-  }
-
-  updateStat(pid, correct);
-  if (correct && !wasDom && dominated(pid)) {
-    toast('🏅 Dominado! Não vai mais aparecer');
-  } else {
-    toast(correct ? '✓ Correto!' : '✗ Errou!');
-  }
-  const newAchs = checkAchs();
-
-  G.cur++;
-  const delay = correct ? 700 : 1100;
-  setTimeout(() => {
-    if (G.mode==='battle') renderQuiz();
-    else if (G.cur >= G.queue.length) endGame();
-    else renderQuiz();
-  }, delay);
-}
-
 // ── BATTLE TIMER ──────────────────────────────────────────────────────
 function startBattleTimer() {
   G.timer = setInterval(() => {
@@ -1734,10 +1680,6 @@ function answerHunt(idx, correct, pid, clickedIdx) {
   setTimeout(renderHunt, correct ? 600 : 1000);
 }
 
-// Re-render hunt with correct card marked — fix: store correct in dataset
-// Patch renderHunt to mark correct card
-const _origRenderHunt = renderHunt;
-
 // ── BURST EFFECT ─────────────────────────────────────────────────────
 function burst(el, color) {
   const rect = el.getBoundingClientRect();
@@ -1760,10 +1702,7 @@ function burst(el, color) {
   setTimeout(() => wrap.remove(), 700);
 }
 
-// Patch answerQ to also burst on correct
-const _origAnswerQ = answerQ;
-
-// Override answerQ inline — add burst
+// Override answerQ — with burst on correct
 function answerQ(idx, correct, pid) {
   if (G.answered) return;
   G.answered = true;
@@ -2527,10 +2466,6 @@ async function loadRankingPage() {
     list.innerHTML = '<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro: ' + e.message + '</div>';
   }
 }
-
-// ── UPDATE HOME USER ───────────────────────────────────────────────
-const _origUpdateHomeUI = updateHomeUI;
-
 
 initAuth();
 </script>
