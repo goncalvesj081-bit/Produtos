@@ -956,8 +956,21 @@ async function initAuth() {
 }
 
 function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.getElementById(id).classList.add('on');
+  // Only toggle login vs app pages
+  const loginEl = document.getElementById('login');
+  if (id === 'login') {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+    if (loginEl) loginEl.classList.add('on');
+    // hide nav
+    const sb = document.getElementById('appSidebar');
+    const bn = document.getElementById('appBottomNav');
+    if (sb) sb.style.display = 'none';
+    if (bn) bn.style.display = 'none';
+  } else {
+    if (loginEl) loginEl.classList.remove('on');
+    showNav();
+    navTo(id);
+  }
 }
 
 let _registerMode = false;
@@ -1005,7 +1018,7 @@ async function doLogin() {
     if (error) { showLoginMsg('E-mail ou senha incorretos', 'err'); btn.textContent='Entrar'; btn.disabled=false; return; }
     currentUser = data.user;
     await loadRemoteState();
-    showNav(); navTo('home');
+    showPage('home');
     updateHomeUI();
   }
 }
