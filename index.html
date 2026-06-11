@@ -2489,28 +2489,32 @@ async function loadRankingPage() {
   const list = document.getElementById('rankingList');
   if (!list) return;
   list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Carregando...</div>';
+  // Sync user separately so a upsert failure doesn't block the ranking query
   try {
-    // Sync current user before loading
     if (currentUser && typeof P !== 'undefined') {
       const mastered = P.filter(p => dominated(p.id)).length;
       const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
       await _supa.from('profiles').upsert({
         id: currentUser.id, name: uname, email: currentUser.email||'',
-        xp: S.xp, streak: S.streak, best_streak: S.bestStreak||0,
-        last_day: S.lastDay, achievements: S.achievements,
-        mastered_count: mastered,
-        total_sessions: S.totalSessions||0,
-        total_answers: S.totalAnswers||0
+        xp: S.xp, streak: S.streak,
+        last_day: S.lastDay, achievements: S.achievements
       });
     }
+  } catch(syncErr) { console.warn('sync:', syncErr.message); }
 
+  try {
     const { data, error } = await _supa
       .from('profiles')
       .select('name, xp, streak, best_streak, achievements, mastered_count')
       .limit(200);
 
-    if (error || !data || !data.length) {
-      list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0">Nenhum dado ainda</div>';
+    if (error) {
+      console.error('ranking query error:', error);
+      list.innerHTML = '<div style="text-align:center;color:var(--red);padding:32px 0;font-size:.78rem">Erro: ' + (error.message||JSON.stringify(error)) + '</div>';
+      return;
+    }
+    if (!data || !data.length) {
+      list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0">Nenhum dado ainda — jogue para aparecer no ranking</div>';
       return;
     }
 
