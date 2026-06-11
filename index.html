@@ -414,6 +414,84 @@ input{font-family:inherit;}
 
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:99px;}
+
+/* ── HOME FIXES ── */
+#home { padding: 20px 24px 80px; gap: 14px; overflow-y: auto; }
+
+/* hide old home-brand on desktop (sidebar has the logo) */
+@media(min-width:769px) {
+  .home-brand { display: none; }
+  .home-tabs  { display: none; }
+}
+@media(max-width:768px) {
+  .home-brand { display: flex; }
+}
+
+/* mode-tile = same as mode-row but as grid tile */
+.mode-tile {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 12px;
+  cursor: pointer; transition: border-color .12s, background .12s;
+  display: flex; flex-direction: column; gap: 4px;
+  min-height: 76px;
+}
+.mode-tile:active { background: var(--bg3); }
+.mode-tile:hover  { border-color: var(--line2); }
+.tile-ico  { font-size: 1.1rem; }
+.tile-name { font: 700 .8rem 'Inter', sans-serif; }
+.tile-desc { font-size: .65rem; color: var(--text3); line-height: 1.3; }
+
+/* mode-section as 2x grid */
+.mode-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.mode-section > .section-label {
+  grid-column: 1 / -1;
+}
+
+/* stats row compact */
+.stats-row {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  border: 1px solid var(--line); border-radius: var(--r);
+  overflow: hidden; background: var(--bg2);
+}
+.stat-cell { padding: 12px 8px; text-align: center; border-right: 1px solid var(--line); }
+.stat-cell:last-child { border-right: none; }
+.stat-v { font: 700 1.15rem 'JetBrains Mono', monospace; }
+.stat-l { font-size: .6rem; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-top: 3px; font-weight: 600; }
+
+/* xp strip compact */
+.xp-strip {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 10px 14px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.xp-row { display: flex; justify-content: space-between; font-size: .68rem; color: var(--text3); font-weight: 500; }
+.xp-track { height: 3px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+.xp-fill  { height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 99px; transition: width .5s; }
+
+/* ── GAME PAGES: fixed overlay so they always appear on top ── */
+#quiz, #flashcard, #typing, #hunt, #silhouette,
+#countdown, #connect, #parperfeit, #sequence, #result {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.home-tabs { display: none !important; }
+
+.home-tabs { display: none !important; }
+.htab { display: none; }
+.section-label { font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);grid-column:1/-1; }
+
+.brand-name { font:800 1.5rem 'Inter',sans-serif; letter-spacing:-1px; line-height:1; }
+.brand-name span { color:var(--red); }
+.brand-sub  { font-size:.72rem; color:var(--text3); font-weight:500; }
+.level-pill { background:var(--blue2);color:var(--blue);border:1px solid var(--blue);border-radius:6px;padding:4px 10px;font:700 .72rem 'JetBrains Mono',monospace; }
 </style>
 </head>
 <body>
@@ -487,11 +565,11 @@ input{font-family:inherit;}
     <div>
       <div class="brand-name">Alumi<span>nas</span></div>
       <div class="brand-sub" id="prodCount">Carregando...</div>
-      <div style="font-size:.72rem;color:var(--smoke);margin-top:2px" id="homeUserName"></div>
+      <div style="font-size:.72rem;color:var(--text3);margin-top:2px" id="homeUserName"></div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
       <div class="level-pill" id="homeLvl">Nv. 1</div>
-      <button onclick="doLogout()" style="background:none;border:none;font-size:.68rem;color:var(--smoke);padding:0">Sair →</button>
+      <button onclick="doLogout()" style="background:none;border:none;font-size:.68rem;color:var(--text3);padding:0">Sair →</button>
     </div>
   </div>
 
@@ -500,7 +578,7 @@ input{font-family:inherit;}
     <div class="xp-track"><div class="xp-fill" id="xpBar" style="width:0%"></div></div>
   </div>
 
-  <div class="stats-row">
+  <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat-cell">
       <div class="stat-v" id="stPct">—</div>
       <div class="stat-l">Acertos</div>
@@ -512,6 +590,10 @@ input{font-family:inherit;}
     <div class="stat-cell">
       <div class="stat-v" id="stRemain">596</div>
       <div class="stat-l">Restam</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-v" id="stStreak">0🔥</div>
+      <div class="stat-l">Sequência</div>
     </div>
   </div>
 
@@ -533,7 +615,7 @@ input{font-family:inherit;}
 
   <div class="ach-section">
     <div class="section-label">Conquistas</div>
-    <div class="ach-wrap" id="achWrap"></div>
+    
   </div>
   </div><!-- end mode-grid-2col -->
 
@@ -592,60 +674,6 @@ input{font-family:inherit;}
 </div>
 
 <!-- DUMMY start of old tab section -->
-<div style="display:none" id="tab-indicadores-old">
-
-    <!-- Progress geral -->
-    <div class="ind-section">
-      <div class="ind-title">Progresso geral</div>
-      <div class="ind-card">
-        <div class="ind-prog-row">
-          <span id="indMastered">0</span> dominados
-          <span style="color:var(--smoke)">de</span>
-          <span id="indTotal">596</span>
-        </div>
-        <div class="ind-track">
-          <div class="ind-fill" id="indFill" style="width:0%"></div>
-        </div>
-        <div class="ind-prog-labels">
-          <span id="indPct">0%</span>
-          <span id="indRemain" style="color:var(--smoke)"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Histórico de rodadas -->
-    <div class="ind-section">
-      <div class="ind-title">Histórico de rodadas</div>
-      <div id="indHistory" class="ind-history-wrap">
-        <div class="ind-empty">Nenhuma rodada ainda</div>
-      </div>
-    </div>
-
-    <!-- Mais errados -->
-    <div class="ind-section">
-      <div class="ind-title">Produtos que você mais erra</div>
-      <div id="indHard" class="ind-hard-wrap">
-        <div class="ind-empty">Nenhum dado ainda</div>
-      </div>
-    </div>
-
-    <!-- Mais acertados -->
-    <div class="ind-section">
-      <div class="ind-title">Produtos que você já domina</div>
-      <div id="indEasy" class="ind-hard-wrap">
-        <div class="ind-empty">Nenhum dado ainda</div>
-      </div>
-    </div>
-
-    <!-- Por tipo -->
-    <div class="ind-section">
-      <div class="ind-title">Desempenho por tipo</div>
-      <div id="indByType" class="ind-type-wrap">
-        <div class="ind-empty">Nenhum dado ainda</div>
-      </div>
-    </div>
-
-  </div><!-- end dummy -->
 
 
 <!-- ══════════════════════════════════════
@@ -789,7 +817,7 @@ input{font-family:inherit;}
   <div class="g-progress">
     <div class="g-prog-row">
       <span class="g-prog-txt" id="ppProg">0 pares</span>
-      <span id="ppMoves" style="font-size:.72rem;color:var(--smoke)">0 movimentos</span>
+      <span id="ppMoves" style="font-size:.72rem;color:var(--text3)">0 movimentos</span>
     </div>
     <div class="g-track"><div class="g-fill" id="ppFill" style="width:0%"></div></div>
   </div>
@@ -817,42 +845,7 @@ input{font-family:inherit;}
 <!-- ══════════════════════════════════════
      RANKING
 ══════════════════════════════════════ -->
-<div class="page" id="rankingPage">
-  <div class="g-bar">
-    <button class="g-back" onclick="showApp();updateHomeUI()">← Voltar</button>
-    <span class="g-mode">🏆 Ranking</span>
-    <div></div>
-  </div>
-  <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;overflow-y:auto" id="rankingList">
-    <div style="text-align:center;color:var(--smoke);padding:32px 0;font-size:.85rem">Carregando...</div>
-  </div>
-</div>
 
-<!-- RANKING PAGE -->
-<div class="page" id="rankingPage" style="background:var(--bg);padding:20px 16px 80px;gap:12px;overflow-y:auto">
-  <div>
-    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">🏆 Ranking</div>
-    <div style="font-size:.7rem;color:var(--text3);margin-top:2px">Top colaboradores por XP</div>
-  </div>
-  <div id="rankingList" style="display:flex;flex-direction:column;gap:6px">
-    <div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.82rem">Carregando...</div>
-  </div>
-</div>
-
-<!-- INDICATORS PAGE -->
-<div class="page" id="indicatorsPage" style="background:var(--bg);padding:20px 16px 80px;gap:14px;overflow-y:auto">
-  <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">📊 Indicadores</div>
-  <div class="ind-card2">
-    <div class="ind-card-title">Progresso geral</div>
-    <div><div class="ind-prog-big" id="indMastered">0</div><div class="ind-prog-sub">dominados de <span id="indTotal">596</span></div></div>
-    <div class="ind-track2"><div class="ind-fill2" id="indFill" style="width:0%"></div></div>
-    <div style="display:flex;justify-content:space-between;font-size:.66rem;color:var(--text3)"><span id="indPct">0%</span><span id="indRemain"></span></div>
-  </div>
-  <div class="ind-card2"><div class="ind-card-title">Histórico de rodadas</div><div id="indHistory"><div style="font-size:.75rem;color:var(--text3)">Nenhuma rodada ainda</div></div></div>
-  <div class="ind-card2"><div class="ind-card-title">Você mais erra</div><div id="indHard"><div style="font-size:.75rem;color:var(--text3)">Jogue mais para ver</div></div></div>
-  <div class="ind-card2"><div class="ind-card-title">Você mais acerta</div><div id="indEasy"><div style="font-size:.75rem;color:var(--text3)">Jogue mais para ver</div></div></div>
-  <div class="ind-card2"><div class="ind-card-title">Por tipo</div><div id="indByType"><div style="font-size:.75rem;color:var(--text3)">Nenhum dado ainda</div></div></div>
-</div>
 
 <!-- ══════════════════════════════════════
      RESULT
@@ -909,6 +902,11 @@ function showNav() {
 window.addEventListener('resize',showNav);
 
 function navTo(id) {
+  // close any open game page first
+  ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'].forEach(gid=>{
+    const el=document.getElementById(gid);
+    if(el){el.classList.remove('on');el.style.display='none';}
+  });
   ['home','rankingPage','indicatorsPage'].forEach(p=>{
     const el=document.getElementById(p);
     if(el){el.classList.toggle('on',p===id);el.style.display=p===id?'flex':'none';}
@@ -946,6 +944,12 @@ function showApp() {
 function goHome() {
   clearInterval(G.timer);
   clearInterval(cdTimer);
+  // hide all game pages
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'];
+  gamePages.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('on'); el.style.display = 'none'; }
+  });
   showApp();
   updateHomeUI();
 }
@@ -956,8 +960,13 @@ async function initAuth() {
     if(loader) loader.style.display='none';
     if(session&&session.user){
       currentUser=session.user;
-      if(event==='INITIAL_SESSION'){await loadRemoteState(); showApp(); updateHomeUI();}
-      else if(event==='SIGNED_IN'){showApp(); updateHomeUI();}
+      if(event==='INITIAL_SESSION'||event==='SIGNED_IN'){
+        await loadRemoteState();
+        showApp();
+        updateHomeUI();
+        // Retry user display after short delay (DOM might not be ready)
+        setTimeout(updateHomeUI, 300);
+      }
     } else {
       currentUser=null;
       showLogin();
@@ -1123,13 +1132,17 @@ function updateHomeUI() {
   document.getElementById('stPct').textContent     = total ? Math.round(cor/total*100)+'%' : '—';
   document.getElementById('stMastered').textContent= mastered;
   document.getElementById('stRemain').textContent  = P.length - mastered;
+  const _sEl = document.getElementById('stStreak'); if(_sEl) _sEl.textContent=(S.streak||0)+'🔥';
 
-  // product count + user name
+  // product count + user name + sidebar
   const pcEl = document.getElementById('prodCount');
   if (pcEl) pcEl.textContent = P.length + ' produtos';
-  const nameEl = document.getElementById('homeUserName');
-  if (nameEl && currentUser) {
-    nameEl.textContent = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
+  if (currentUser) {
+    const uname  = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
+    const uemail = currentUser.email || '';
+    const nameEl = document.getElementById('homeUserName'); if(nameEl) nameEl.textContent = uname;
+    const sbN    = document.getElementById('sbName');  if(sbN) sbN.textContent = uname;
+    const sbE    = document.getElementById('sbEmail'); if(sbE) sbE.textContent = uemail;
   }
 
   // achievements
@@ -1142,8 +1155,21 @@ function updateHomeUI() {
 
 // ── NAV ─────────────────────────────────────────────────────────────
 function show(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('on');
+    p.style.display = 'none';
+  });
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('on'); el.style.display = 'flex'; }
+  // hide sidebar/bottomnav for game pages
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'];
+  const isGame = gamePages.includes(id);
+  const sb = document.getElementById('appSidebar');
+  const bn = document.getElementById('appBottomNav');
+  if (isGame) {
+    if (sb) sb.style.display = 'none';
+    if (bn) bn.style.display = 'none';
+  }
 }
 function goHome() {
   clearInterval(G.timer);
@@ -1173,9 +1199,15 @@ function weightedPick(pool, n, excl=[]) {
       cum += ws[j];
       if (r <= cum) { res.push(avail[j]); used.add(j); break; }
     }
-    if (res.length < i+1) {
-      const rem = avail.filter((_,j) => !used.has(j));
-      if (rem.length) { res.push(rem[Math.floor(Math.random()*rem.length)]); }
+    if (res.length <= i) {
+      // fallback: pick any unused item
+      const rem = avail.filter((p,j) => !used.has(j) && weight(p.id) > 0);
+      const fallback = rem.length ? rem : avail.filter((_,j) => !used.has(j));
+      if (fallback.length) { 
+        const pick = fallback[Math.floor(Math.random()*fallback.length)];
+        res.push(pick); 
+        used.add(avail.indexOf(pick));
+      }
     }
   }
   return res;
@@ -1487,7 +1519,7 @@ function renderType() {
     <div class="q-photo">
       <img src="${p.img}" alt="" loading="lazy">
     </div>
-    <div class="sim-track"><div class="sim-fill" id="simBar" style="width:0%;background:var(--paper3)"></div></div>
+    <div class="sim-track"><div class="sim-fill" id="simBar" style="width:0%;background:var(--bg4)"></div></div>
     <div class="type-wrap">
       <input class="type-inp" id="typeInp" placeholder="Nome do produto..."
         oninput="checkSim(this.value,'${p.name.replace(/'/g,"\\'")}',${p.id})"
@@ -1718,12 +1750,7 @@ function answerQ(idx, correct, pid) {
 
 // ── TABS ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.htab').forEach((b,i) =>
-    b.classList.toggle('active', ['inicio','indicadores'][i] === tab));
-  document.getElementById('tab-inicio').style.display      = tab==='inicio'      ? 'flex'   : 'none';
-  document.getElementById('tab-indicadores').style.display = tab==='indicadores' ? 'flex'   : 'none';
-  document.getElementById('tab-inicio').style.flexDirection = 'column';
-  
+  if (tab === 'indicadores') navTo('indicatorsPage');
 }
 
 // ── HISTORY SAVE ─────────────────────────────────────────────────────
@@ -1804,7 +1831,7 @@ function renderIndicadores() {
           <div class="hard-name2">${p.name}</div>
           <div class="hard-sub">${st.seen} vistas · ${st.cor} certas · ${st.wr} erros</div>
         </div>
-        <div class="hard-pct2">${Math.round(rate*100)}%<br><span style="font-size:.6rem;color:var(--smoke)">erro</span></div>
+        <div class="hard-pct2">${Math.round(rate*100)}%<br><span style="font-size:.6rem;color:var(--text3)">erro</span></div>
       </div>`).join('');
   }
 
@@ -1825,7 +1852,7 @@ function renderIndicadores() {
           <div class="hard-name2">${p.name}</div>
           <div class="hard-sub">${st.seen} vistas · ${st.cor} certas · ${st.wr} erros</div>
         </div>
-        <div class="hard-pct2" style="color:var(--sage)">${Math.round(rate*100)}%<br><span style="font-size:.6rem;color:var(--smoke)">acerto</span></div>
+        <div class="hard-pct2" style="color:var(--sage)">${Math.round(rate*100)}%<br><span style="font-size:.6rem;color:var(--text3)">acerto</span></div>
       </div>`).join('');
   }
 
@@ -2064,7 +2091,7 @@ function renderConnect() {
   document.getElementById('cnFill').style.width  = Math.min(100,(cnState.rounds-1)/5*100)+'%';
 
   document.getElementById('cn-content').innerHTML = `
-    <div style="font-size:.75rem;color:var(--smoke);text-align:center;font-weight:600;flex-shrink:0">
+    <div style="font-size:.75rem;color:var(--text3);text-align:center;font-weight:600;flex-shrink:0">
       Toque uma foto, depois o nome correspondente
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;flex-shrink:0">
@@ -2225,8 +2252,16 @@ function ppFlip(i) {
 let seqState = { phase:'show', batch:[], cur:0, answers:{}, rounds:0 };
 
 function renderSequence() {
+  if (!P || P.length === 0) { 
+    document.getElementById('seq-content').innerHTML = '<div style="color:var(--text3);text-align:center;padding:40px">Carregando produtos...</div>';
+    return;
+  }
   seqState.rounds++;
   const batch = buildQueue(3, false).slice(0,3);
+  if (!batch || batch.length === 0) {
+    document.getElementById('seq-content').innerHTML = '<div style="color:var(--text3);text-align:center;padding:40px">Nenhum produto disponível</div>';
+    return;
+  }
   seqState = { phase:'show', batch, cur:0, answers:{}, rounds:seqState.rounds };
 
   document.getElementById('seqScore').textContent = G.score + ' pts';
@@ -2239,7 +2274,7 @@ function renderSequence() {
 function seqShowPhase() {
   const batch = seqState.batch;
   document.getElementById('seq-content').innerHTML = `
-    <div style="text-align:center;font-size:.78rem;color:var(--smoke);font-weight:600;flex-shrink:0">
+    <div style="text-align:center;font-size:.78rem;color:var(--text3);font-weight:600;flex-shrink:0">
       Memorize os 3 produtos — vão desaparecer em breve
     </div>
     <div class="seq-show-grid">
@@ -2252,73 +2287,69 @@ function seqShowPhase() {
   let t = 3;
   const iv = setInterval(()=>{
     t--;
+    const page = document.getElementById('sequence');
+    if (!page || page.style.display === 'none') { clearInterval(iv); return; }
     const el = document.getElementById('seqCnt');
     if (el) el.textContent = t > 0 ? t : '...';
-    if (t <= 0) {
-      clearInterval(iv);
-      setTimeout(seqRecallPhase, 500);
-    }
+    if (t <= 0) { clearInterval(iv); setTimeout(seqRecallPhase, 400); }
   }, 1000);
 }
 
 function seqRecallPhase() {
-  const batch = seqState.batch;
   seqState.phase = 'recall';
   seqState.cur = 0;
+  seqRenderRecall();
+}
 
-  function renderRecall() {
-    if (seqState.cur >= batch.length) {
-      // Score
-      const correct = Object.values(seqState.answers).filter(Boolean).length;
-      G.cor += correct; G.wr += (batch.length - correct);
-      const pts = correct * 15;
-      G.score += pts; addXP(pts);
-      if (pts > 0) floatPts(pts, 'var(--sage)');
-      batch.forEach((p,i) => updateStat(p.id, seqState.answers[i]||false));
-      checkAchs();
-      G.cur += batch.length;
-      setTimeout(() => G.cur >= 30 ? endGame() : renderSequence(), 700);
-      return;
-    }
-    const p = batch[seqState.cur];
-    const distractors = getDistractors(p, 5);
-    const opts = shuffle([p, ...distractors]).slice(0,6);
-
-    document.getElementById('seq-content').innerHTML = `
-      <div style="font-size:.78rem;color:var(--smoke);font-weight:600;flex-shrink:0;text-align:center">
-        ${seqState.cur+1} de ${batch.length} — qual era este produto?
-      </div>
-      <div class="seq-recall-row" style="justify-content:center;flex-shrink:0">
-        <div class="seq-recall-thumb">
-          <img src="${p.img}" alt="">
-        </div>
-      </div>
-      <div class="seq-recall-opts" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${opts.map((o,i)=>`<button class="seq-opt" id="sqo${i}"
-          onclick="seqAnswer(${o.id===p.id},${p.id},'sqo${i}')">
-          ${o.name}
-        </button>`).join('')}
-      </div>`;
+function seqRenderRecall() {
+  const batch = seqState.batch;
+  if (seqState.cur >= batch.length) {
+    const correct = Object.values(seqState.answers).filter(Boolean).length;
+    G.cor += correct; G.wr += (batch.length - correct);
+    const pts = correct * 15;
+    G.score += pts; addXP(pts);
+    if (pts > 0) floatPts(pts, 'var(--sage2)');
+    batch.forEach((p,i) => updateStat(p.id, !!seqState.answers[i]));
+    checkAchs();
+    G.cur += batch.length;
+    setTimeout(() => G.cur >= 30 ? endGame() : renderSequence(), 700);
+    return;
   }
+  const p = batch[seqState.cur];
+  const opts = shuffle([p, ...getDistractors(p, 5)]).slice(0, 6);
+  const gc = document.getElementById('seq-content');
+  if (!gc) return;
+  gc.innerHTML = `
+    <div style="font-size:.75rem;color:var(--text3);font-weight:600;text-align:center;flex-shrink:0">
+      ${seqState.cur+1} de ${batch.length} — qual era este produto?
+    </div>
+    <div style="display:flex;justify-content:center;flex-shrink:0">
+      <div style="width:100px;height:100px;border-radius:8px;border:1px solid var(--line);background:#fff;overflow:hidden">
+        <img src="${p.img}" style="width:100%;height:100%;object-fit:contain;padding:4px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
+      ${opts.map((o,i) => `<button class="seq-opt" id="sqo${i}"
+        onclick="seqAnswer(${o.id===p.id},${p.id},'sqo${i}')">${o.name}</button>`).join('')}
+    </div>`;
+}
 
-  window.seqAnswer = function(correct, pid, btnId) {
-    document.querySelectorAll('.seq-opt').forEach(b=>b.disabled=true);
-    const btn = document.getElementById(btnId);
-    if (correct) {
-      btn.classList.add('correct'); burst(btn,'var(--sage2)'); toast('✓');
-    } else {
-      btn.classList.add('wrong');
-      document.querySelectorAll('.seq-opt').forEach(b=>{
-        if(b.textContent.trim()===seqState.batch[seqState.cur]?.name) b.classList.add('correct');
-      });
-      toast('✗');
-    }
-    seqState.answers[seqState.cur] = correct;
-    seqState.cur++;
-    setTimeout(renderRecall, 700);
-  };
-
-  renderRecall();
+function seqAnswer(correct, pid, btnId) {
+  document.querySelectorAll('.seq-opt').forEach(b => b.disabled = true);
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (correct) {
+    btn.classList.add('correct'); burst(btn, 'var(--green)'); toast('✓');
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.seq-opt').forEach(b => {
+      if (b.textContent.trim() === seqState.batch[seqState.cur]?.name) b.classList.add('correct');
+    });
+    toast('✗');
+  }
+  seqState.answers[seqState.cur] = correct;
+  seqState.cur++;
+  setTimeout(seqRenderRecall, 700);
 }
 
 
@@ -2377,7 +2408,7 @@ function _showPage_unused(id) {
 // ── RANKING ──────────────────────────────────────────────────────
 async function loadRankingPage() {
   const list = document.getElementById('rankingList'); if(!list) return;
-  list.innerHTML = '<div style="text-align:center;color:var(--smoke);padding:32px 0;font-size:.85rem">Carregando...</div>';
+  list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0;font-size:.85rem">Carregando...</div>';
 
   try {
     const { data, error } = await _supa
@@ -2387,7 +2418,7 @@ async function loadRankingPage() {
       .limit(50);
 
     if (error || !data.length) {
-      list.innerHTML = '<div style="text-align:center;color:var(--smoke);padding:32px 0">Nenhum dado ainda</div>';
+      list.innerHTML = '<div style="text-align:center;color:var(--text3);padding:32px 0">Nenhum dado ainda</div>';
       return;
     }
 
