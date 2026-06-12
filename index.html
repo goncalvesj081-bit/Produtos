@@ -1215,9 +1215,13 @@ async function loadRemoteState() {
         }
       }
       const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
+      // Banco é fonte da verdade — zera stats local e reconstrói do banco
+      S.stats = {};
       if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
       const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(200);
-      if(hist) S.history=hist.slice(0,30).map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
+      S.history = hist && hist.length
+        ? hist.slice(0,30).map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}))
+        : [];
 
       // Calcular streak diretamente das sessions (fonte da verdade no banco)
       const sc = calcStreakFromHistRows(hist);
@@ -1227,6 +1231,8 @@ async function loadRemoteState() {
       console.log('[loadRemoteState] Streak das sessions:', sc.streak, '| lastDay:', sc.lastDay);
 
       _remoteLoaded = true;
+      // Sobrescreve localStorage com estado limpo do banco — elimina dados velhos
+      try { localStorage.setItem('alu_state', JSON.stringify(S)); } catch(e){}
       console.log('[loadRemoteState] ✅ Estado remoto carregado:', {
         xp:             S.xp,
         streak:         S.streak,
