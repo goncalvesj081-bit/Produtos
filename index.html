@@ -731,12 +731,56 @@ input{font-family:inherit;}
 .mode-tile-lock .lock-lbl { font: 600 .58rem 'Inter',sans-serif; color: var(--text3); text-align: center; line-height: 1.3; }
 .mode-tile.locked { cursor: default; }
 .mode-tile.locked:active { background: var(--bg2); transform: none; }
+
+/* ── MODO DOMINADOS — tile bloqueado se nível < 5 ── */
+#tile-dominados { position:relative; }
+#tile-dominados.dom-locked { opacity:.45;cursor:default;pointer-events:none; }
+#tile-dominados.dom-locked::after {
+  content:'🔒 Nv.5+';
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font:700 .7rem 'Inter',sans-serif;color:var(--text3);
+  background:rgba(13,13,13,.75);border-radius:var(--r);
+}
+/* ── TREINAMENTO ── */
+.trei-card {
+  background:#fff;border-radius:var(--r);border:1px solid var(--line);overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;
+  gap:8px;padding:16px;flex-shrink:0;
+  animation:fadeInUp .35s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.trei-prod-img{width:100%;max-height:180px;object-fit:contain;}
+.trei-prod-name{font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px;color:#111;text-align:center;line-height:1.25;}
+.trei-prod-line{font-size:.72rem;color:#777;text-align:center;}
+.trei-timer-bar{width:100%;height:5px;background:var(--bg4);border-radius:99px;overflow:hidden;flex-shrink:0;}
+.trei-timer-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .1s linear;}
+.trei-instruction{text-align:center;font-size:.72rem;color:var(--text3);font-weight:600;flex-shrink:0;}
+.trei-phase-label{text-align:center;padding:6px 14px;border-radius:99px;font:700 .65rem 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;flex-shrink:0;}
+.trei-phase-aprender{background:var(--gold2);color:var(--gold);border:1px solid var(--gold);}
+.trei-phase-testar{background:var(--blue2);color:var(--blue);border:1px solid var(--blue);}
+/* ── TUTORIAL ── */
+.tut-highlight-el{outline:3px solid var(--blue) !important;outline-offset:4px !important;border-radius:10px !important;animation:tutPulse 1.2s ease-in-out infinite;position:relative;z-index:8999;}
+@keyframes tutPulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}50%{box-shadow:0 0 0 8px rgba(59,130,246,0)}}
 </style>
 </head>
 <body>
 
 <!-- ══ TOAST ══ -->
 <div id="toast"></div>
+<div id="tutOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9000;pointer-events:all"></div>
+<div id="tutBox" style="display:none;position:fixed;z-index:9001;background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:20px 18px 16px;width:min(320px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.6);flex-direction:column;gap:12px">
+  <div id="tutDots" style="display:flex;gap:5px;justify-content:center"></div>
+  <div style="text-align:center">
+    <div id="tutIcon" style="font-size:2rem;line-height:1;margin-bottom:6px"></div>
+    <div id="tutTitle" style="font:700 .95rem 'Inter',sans-serif;letter-spacing:-.2px"></div>
+  </div>
+  <div id="tutBody" style="font-size:.78rem;color:var(--text2);line-height:1.55;text-align:center"></div>
+  <div id="tutHighlight" style="display:none;background:var(--blue2);border:1px solid var(--blue);border-radius:8px;padding:6px 10px;font-size:.68rem;color:var(--blue);text-align:center;font-weight:600"></div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button onclick="tutSkip()" style="flex:1;background:none;border:1px solid var(--line2);border-radius:8px;padding:8px;font:500 .72rem 'Inter',sans-serif;color:var(--text3)">Pular tutorial</button>
+    <button id="tutNextBtn" onclick="tutNext()" style="flex:2;background:var(--blue);border:none;border-radius:8px;padding:8px;font:700 .8rem 'Inter',sans-serif;color:#fff">Próximo →</button>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════
      HOME
@@ -861,6 +905,8 @@ input{font-family:inherit;}
     <div class="mode-tile" data-mode="sequence"   onclick="startMode('sequence')"><div class="tile-ico">🔢</div><div class="tile-name">Sequência</div><div class="tile-desc">Memorize 3</div></div>
     <div class="mode-tile" data-mode="duel"       onclick="startMode('duel')"><div class="tile-ico">🎰</div><div class="tile-name">Dupla ou Nada</div><div class="tile-desc">Acumule ou perca tudo</div></div>
     <div class="mode-tile" data-mode="random"     onclick="startMode('random')"><div class="tile-ico">🎲</div><div class="tile-name">Aleatório</div><div class="tile-desc">Todos os modos</div></div>
+    <div class="mode-tile" id="tile-dominados" onclick="startDominados()"><div class="tile-ico">🏅</div><div class="tile-name">Dominados</div><div class="tile-desc">Só o que você domina</div></div>
+    <div class="mode-tile" onclick="startTreinamento()"><div class="tile-ico">📖</div><div class="tile-name">Treinamento</div><div class="tile-desc">Aprenda antes de jogar</div></div>
   </div>
 
   </div><!-- end mode-grid-2col -->
@@ -1064,6 +1110,34 @@ input{font-family:inherit;}
       <div class="admin-empty">Carregando...</div>
     </div>
   </div>
+</div>
+
+<!-- ══ MODO DOMINADOS ══ -->
+<div class="page" id="dominados">
+  <div class="g-bar">
+    <button class="g-back" onclick="goHome()">← Voltar</button>
+    <span class="g-mode">🏅 Dominados</span>
+    <div class="g-score" id="domScore">0 pts</div>
+  </div>
+  <div class="g-progress">
+    <div class="g-prog-row"><span class="g-prog-txt" id="domProgTxt">1 / 10</span></div>
+    <div class="g-track"><div class="g-fill" id="domFill" style="width:10%"></div></div>
+  </div>
+  <div id="dom-content" style="flex:1;display:flex;flex-direction:column;padding:12px 14px 80px;gap:10px;overflow-y:auto"></div>
+</div>
+
+<!-- ══ MODO TREINAMENTO ══ -->
+<div class="page" id="treinamento">
+  <div class="g-bar">
+    <button class="g-back" onclick="goHome()">← Voltar</button>
+    <span class="g-mode" id="treiTitle">📖 Treinamento</span>
+    <div class="g-score" id="treiScore">0 pts</div>
+  </div>
+  <div class="g-progress">
+    <div class="g-prog-row"><span class="g-prog-txt" id="treiProgTxt">1 / 8</span></div>
+    <div class="g-track"><div class="g-fill" id="treiFill" style="width:0%;background:var(--gold)"></div></div>
+  </div>
+  <div id="trei-content" style="flex:1;display:flex;flex-direction:column;padding:12px 14px 80px;gap:12px;overflow-y:auto"></div>
 </div>
 
 <!-- ══ ACHIEVEMENT MODAL ══ -->
@@ -1403,7 +1477,7 @@ function goHome() {
   clearInterval(G.timer);
   clearInterval(cdTimer);
   // hide all game pages
-  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'];
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result','dominados','treinamento'];
   gamePages.forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.classList.remove('on'); el.style.display = 'none'; }
@@ -2067,7 +2141,7 @@ function show(id) {
   const el = document.getElementById(id);
   if (el) { el.classList.add('on'); el.style.display = 'flex'; }
   // hide sidebar/bottomnav for game pages
-  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'];
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result','dominados','treinamento'];
   const isGame = gamePages.includes(id);
   const sb = document.getElementById('appSidebar');
   const bn = document.getElementById('appBottomNav');
@@ -3326,6 +3400,305 @@ function seqAnswer(correct, pid, btnId) {
 }
 
 
+
+// ══════════════════════════════════════════════════════════════════════
+// MODO "DOMINADOS" — quiz com produtos dominados (lvl >= 3)
+// · Só disponível no nível 5+
+// · Sem XP, sem estatísticas globais, sem combo
+// · Salva sessions com mode = 'Revisão' via insert direto
+// ══════════════════════════════════════════════════════════════════════
+
+let _domG = { queue:[], cur:0, cor:0, wr:0, score:0, answered:false };
+
+function updateDominadosTile() {
+  const mastered = typeof P !== 'undefined' ? P.filter(p => dominated(p.id)).length : 0;
+  const lv = levelOf(mastered);
+  const tile = document.getElementById('tile-dominados');
+  if (!tile) return;
+  if (lv < 5) tile.classList.add('dom-locked');
+  else         tile.classList.remove('dom-locked');
+}
+
+// Patch não-invasivo: envolve updateHomeUI sem modificá-la
+(function _patchDominadosTile() {
+  const orig = window.updateHomeUI;
+  if (typeof orig === 'function') {
+    window.updateHomeUI = function(...args) { orig.apply(this, args); updateDominadosTile(); };
+  } else { setTimeout(_patchDominadosTile, 200); }
+})();
+
+function startDominados() {
+  const mastered = typeof P !== 'undefined' ? P.filter(p => dominated(p.id)).length : 0;
+  if (levelOf(mastered) < 5) { toast('🔒 Disponível a partir do Nível 5!'); return; }
+  const pool = P.filter(p => { const st = S.stats[p.id]; return st && st.lvl >= 3; });
+  if (pool.length < 4) { toast('Você precisa de pelo menos 4 produtos dominados!'); return; }
+  const shuffled = pool.slice().sort(() => Math.random() - .5).slice(0, 10);
+  _domG = { queue: shuffled, cur: 0, cor: 0, wr: 0, score: 0, answered: false };
+  const sb = document.getElementById('appSidebar');
+  const bn = document.getElementById('appBottomNav');
+  if (sb) sb.style.display = 'none';
+  if (bn) bn.style.display = 'none';
+  show('dominados');
+  _domRenderQuiz();
+}
+
+function _domRenderQuiz() {
+  const { queue, cur } = _domG;
+  if (cur >= queue.length) { _domEndGame(); return; }
+  const p = queue[cur];
+  const domPool = P.filter(x => x.id !== p.id && S.stats[x.id] && S.stats[x.id].lvl >= 3);
+  const anyPool = P.filter(x => x.id !== p.id);
+  const dists   = (domPool.length >= 3 ? domPool : anyPool).sort(() => Math.random() - .5).slice(0, 3);
+  const opts    = [p, ...dists].sort(() => Math.random() - .5);
+  const keys    = ['A','B','C','D'];
+  _domG.answered = false;
+  document.getElementById('domScore').textContent   = _domG.score + ' pts';
+  document.getElementById('domProgTxt').textContent = (cur + 1) + ' / ' + queue.length;
+  document.getElementById('domFill').style.width    = (cur / queue.length * 100) + '%';
+  document.getElementById('dom-content').innerHTML = `
+    <div class="q-photo" id="domCard"><img src="${p.img}" alt="${p.name}" loading="lazy"></div>
+    <div class="q-opts">
+      ${opts.map((o,i) => `<button class="q-opt" id="dopt${i}" onclick="_domAnswer(${i},${o.id===p.id},${p.id})"><span class="q-key">${keys[i]}</span>${o.name}</button>`).join('')}
+    </div>`;
+}
+
+function _domAnswer(idx, correct, pid) {
+  if (_domG.answered) return;
+  _domG.answered = true;
+  document.querySelectorAll('#dom-content .q-opt').forEach(b => b.disabled = true);
+  const btn  = document.getElementById('dopt' + idx);
+  const card = document.getElementById('domCard');
+  if (correct) {
+    if (btn)  btn.classList.add('correct');
+    if (card) card.classList.add('correct');
+    _domG.cor++;
+    document.getElementById('domScore').textContent = _domG.score + ' pts';
+    toast('✓ Correto!');
+  } else {
+    if (btn)  btn.classList.add('wrong');
+    if (card) card.classList.add('wrong');
+    const correctName = _domG.queue[_domG.cur] ? _domG.queue[_domG.cur].name : '';
+    document.querySelectorAll('#dom-content .q-opt').forEach(b => {
+      if (correctName && b.textContent.includes(correctName)) b.classList.add('correct');
+    });
+    _domG.wr++;
+    toast('✗ Errou!');
+  }
+  _domG.cur++;
+  setTimeout(_domRenderQuiz, correct ? 700 : 1100);
+}
+
+
+async function _domEndGame() {
+  await _domSaveSession();
+  const tot = _domG.cor + _domG.wr;
+  const pct = tot > 0 ? Math.round(_domG.cor / tot * 100) : 0;
+  document.getElementById('dom-content').innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:20px">
+      <div style="font-size:2.5rem">🏅</div>
+      <div style="font:800 1.3rem 'Inter',sans-serif;letter-spacing:-.4px">Revisão concluída!</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:300px">
+        <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:12px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:var(--gold)">${_domG.score}</div>
+          <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Pontos</div>
+        </div>
+        <div style="background:var(--green2);border:1px solid var(--green);border-radius:var(--r);padding:12px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:var(--green)">${_domG.cor}</div>
+          <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Acertos</div>
+        </div>
+        <div style="background:var(--blue2);border:1px solid var(--blue);border-radius:var(--r);padding:12px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:var(--blue)">${pct}%</div>
+          <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Acerto</div>
+        </div>
+      </div>
+
+      <button onclick="goHome()" style="margin-top:8px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:12px 32px;font:700 .85rem 'Inter',sans-serif;cursor:pointer">Voltar ao início</button>
+    </div>`;
+}
+
+async function _domSaveSession() {
+  if (!currentUser) return;
+  try {
+    const { error } = await _supa.from('sessions').insert({ user_id:currentUser.id, mode:'Revisão', correct:_domG.cor, wrong:_domG.wr, score:_domG.score });
+    if (error) console.error('[dominados] _domSaveSession:', error);
+    else console.log('[dominados] Sessão Revisão salva');
+  } catch(e) { console.error('[dominados] _domSaveSession exception:', e); }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MODO "TREINAMENTO" — aprender (foto+nome 4s) depois testar (quiz)
+// · Sem XP, sem estatísticas globais
+// · Salva sessions com mode = 'Treinamento' via insert direto
+// ══════════════════════════════════════════════════════════════════════
+
+let _treiG = { batches:[], batchIdx:0, phase:'learn', learnIdx:0, testIdx:0, cor:0, wr:0, score:0, learnTimer:null };
+
+function startTreinamento() {
+  clearInterval(_treiG.learnTimer);
+  const unseen = P.filter(p => !S.stats[p.id] || S.stats[p.id].lvl === 0);
+  const lowLvl = P.filter(p => S.stats[p.id] && S.stats[p.id].lvl > 0 && S.stats[p.id].lvl < 3);
+  const pool   = [...unseen, ...lowLvl].sort(() => Math.random() - .5);
+  const src    = pool.length >= 8 ? pool : P.slice().sort(() => Math.random() - .5);
+  _treiG = {
+    batches: [src.slice(0,4), src.slice(4,8)].filter(b => b.length > 0),
+    batchIdx:0, phase:'learn', learnIdx:0, testIdx:0,
+    cor:0, wr:0, score:0, learnTimer:null
+  };
+  const sb = document.getElementById('appSidebar');
+  const bn = document.getElementById('appBottomNav');
+  if (sb) sb.style.display = 'none';
+  if (bn) bn.style.display = 'none';
+  show('treinamento');
+  _treiUpdateHeader();
+  _treiLearnPhase();
+}
+
+function _treiCurrentBatch() { return _treiG.batches[_treiG.batchIdx] || []; }
+function _treiTotalItems()   { return _treiG.batches.reduce((s,b) => s + b.length, 0); }
+function _treiDoneItems() {
+  let done = 0;
+  for (let i = 0; i < _treiG.batchIdx; i++) done += _treiG.batches[i].length;
+  if (_treiG.phase === 'test') done += _treiCurrentBatch().length;
+  done += (_treiG.phase === 'test' ? _treiG.testIdx : _treiG.learnIdx);
+  return done;
+}
+function _treiUpdateHeader() {
+  const total = _treiTotalItems(), done = _treiDoneItems();
+  const pct   = total > 0 ? (done / total * 100) : 0;
+  const phase = _treiG.phase === 'learn' ? '📖 Aprender' : '🧪 Testar';
+  document.getElementById('treiTitle').textContent   = phase + ' — Lote ' + (_treiG.batchIdx+1) + '/' + _treiG.batches.length;
+  document.getElementById('treiProgTxt').textContent = done + ' / ' + total;
+  document.getElementById('treiFill').style.width    = pct + '%';
+  document.getElementById('treiScore').textContent   = _treiG.score + ' pts';
+}
+
+function _treiLearnPhase() {
+  _treiG.phase = 'learn'; _treiG.learnIdx = 0;
+  _treiUpdateHeader(); _treiShowLearnCard();
+}
+
+function _treiShowLearnCard() {
+  clearInterval(_treiG.learnTimer);
+  const batch = _treiCurrentBatch();
+  if (_treiG.learnIdx >= batch.length) { _treiTestPhase(); return; }
+  const p = batch[_treiG.learnIdx];
+  const rem = batch.length - _treiG.learnIdx;
+  _treiUpdateHeader();
+  const DURATION = 4000;
+  let elapsed = 0;
+  document.getElementById('trei-content').innerHTML = `
+    <div class="trei-phase-label trei-phase-aprender">📖 Fase de aprendizado</div>
+    <div class="trei-instruction">${rem} produto${rem>1?'s':''} restante${rem>1?'s':''} · memorize!</div>
+    <div class="trei-card">
+      <img class="trei-prod-img" src="${p.img}" alt="${p.name}">
+      <div class="trei-prod-name">${p.name}</div>
+      ${p.line ? `<div class="trei-prod-line">${p.line}</div>` : ''}
+    </div>
+    <div class="trei-timer-bar"><div class="trei-timer-fill" id="treiTimerFill" style="width:100%"></div></div>
+    <button onclick="_treiSkipLearn()" style="background:none;border:1px solid var(--line);border-radius:var(--r);padding:8px;font-size:.72rem;color:var(--text3);width:100%">Próximo →</button>`;
+  _treiG.learnTimer = setInterval(() => {
+    elapsed += 100;
+    const fill = document.getElementById('treiTimerFill');
+    if (fill) fill.style.width = Math.max(0, 100 - (elapsed/DURATION*100)) + '%';
+    if (elapsed >= DURATION) { clearInterval(_treiG.learnTimer); _treiG.learnIdx++; _treiShowLearnCard(); }
+  }, 100);
+}
+
+function _treiSkipLearn() { clearInterval(_treiG.learnTimer); _treiG.learnIdx++; _treiShowLearnCard(); }
+
+function _treiTestPhase() {
+  _treiG.phase = 'test'; _treiG.testIdx = 0;
+  _treiUpdateHeader(); _treiShowTestCard();
+}
+
+function _treiShowTestCard() {
+  const batch = _treiCurrentBatch();
+  if (_treiG.testIdx >= batch.length) {
+    _treiG.batchIdx++;
+    if (_treiG.batchIdx >= _treiG.batches.length) { _treiEndSession(); }
+    else { _treiTransition(); }
+    return;
+  }
+  const p    = batch[_treiG.testIdx];
+  const opts = [p, ...P.filter(x => x.id !== p.id).sort(() => Math.random() - .5).slice(0,3)].sort(() => Math.random() - .5);
+  const keys = ['A','B','C','D'];
+  _treiUpdateHeader();
+  document.getElementById('trei-content').innerHTML = `
+    <div class="trei-phase-label trei-phase-testar">🧪 Fase de teste</div>
+    <div class="trei-instruction">${_treiG.testIdx+1} de ${batch.length} — qual é este produto?</div>
+    <div style="background:#fff;border-radius:var(--r);border:1px solid var(--line);flex-shrink:0">
+      <img src="${p.img}" alt="" style="width:100%;height:180px;object-fit:contain;padding:14px;display:block">
+    </div>
+    <div class="q-opts">
+      ${opts.map((o,i) => `<button class="q-opt" id="trio${i}" onclick="_treiAnswer(${i},${o.id===p.id},${p.id})"><span class="q-key">${keys[i]}</span>${o.name}</button>`).join('')}
+    </div>`;
+}
+
+function _treiAnswer(idx, correct, pid) {
+  document.querySelectorAll('#trei-content .q-opt').forEach(b => b.disabled = true);
+  const btn = document.getElementById('trio' + idx);
+  if (correct) {
+    if (btn) btn.classList.add('correct');
+    _treiG.cor++;
+    toast('✓ Correto!');
+  } else {
+    if (btn) btn.classList.add('wrong');
+    const correctName = _treiCurrentBatch()[_treiG.testIdx]?.name;
+    document.querySelectorAll('#trei-content .q-opt').forEach(b => { if (correctName && b.textContent.includes(correctName)) b.classList.add('correct'); });
+    _treiG.wr++; toast('✗ Errou!');
+  }
+  document.getElementById('treiScore').textContent = _treiG.score + ' pts';
+  _treiG.testIdx++;
+  setTimeout(_treiShowTestCard, correct ? 700 : 1100);
+}
+
+function _treiTransition() {
+  _treiUpdateHeader();
+  document.getElementById('trei-content').innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px">
+      <div style="font-size:2rem">✅</div>
+      <div style="font:700 .95rem 'Inter',sans-serif">Lote ${_treiG.batchIdx} concluído!</div>
+      <div style="font-size:.75rem;color:var(--text3)">Preparado para o próximo lote?</div>
+      <button onclick="_treiLearnPhase()" style="background:var(--gold);color:#000;border:none;border-radius:var(--r);padding:12px 28px;font:700 .85rem 'Inter',sans-serif;cursor:pointer">Próximo lote →</button>
+    </div>`;
+}
+
+async function _treiEndSession() {
+  await _treiSaveSession();
+  const tot = _treiG.cor + _treiG.wr;
+  const pct = tot > 0 ? Math.round(_treiG.cor / tot * 100) : 0;
+  document.getElementById('trei-content').innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:20px">
+      <div style="font-size:2.5rem">📖</div>
+      <div style="font:800 1.3rem 'Inter',sans-serif;letter-spacing:-.4px">Treinamento concluído!</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:300px">
+        <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:12px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:var(--gold)">${_treiG.score}</div>
+          <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Pontos</div>
+        </div>
+        <div style="background:var(--green2);border:1px solid var(--green);border-radius:var(--r);padding:12px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:var(--green)">${_treiG.cor}</div>
+          <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Acertos</div>
+        </div>
+        <div style="background:var(--blue2);border:1px solid var(--blue);border-radius:var(--r);padding:12px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:var(--blue)">${pct}%</div>
+          <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Acerto</div>
+        </div>
+      </div>
+      <button onclick="goHome()" style="margin-top:8px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:12px 32px;font:700 .85rem 'Inter',sans-serif;cursor:pointer">Voltar ao início</button>
+    </div>`;
+}
+
+
+async function _treiSaveSession() {
+  if (!currentUser) return;
+  try {
+    const { error } = await _supa.from('sessions').insert({ user_id:currentUser.id, mode:'Treinamento', correct:_treiG.cor, wrong:_treiG.wr, score:_treiG.score });
+    if (error) console.error('[treinamento] _treiSaveSession:', error);
+    else console.log('[treinamento] Sessão Treinamento salva');
+  } catch(e) { console.error('[treinamento] _treiSaveSession exception:', e); }
+}
+
 // ── MASTERED SHEET ───────────────────────────────────────────────────
 function showMastered() {
   const mastered = P.filter(p => dominated(p.id));
@@ -4113,10 +4486,13 @@ async function admEditSave() {
   if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
 
   try {
-    const { error } = await _supa
+    const { data, error } = await _supa
       .from('profiles')
       .update({ name: nameVal, email: emailVal, is_admin: isAdminVal })
-      .eq('id', _admEditUserId);
+      .eq('id', _admEditUserId)
+      .select();
+
+    console.log('[admEditSave] data:', data, '| error:', error);
 
     if (error) {
       console.error('[admEditSave]', error);
@@ -4379,7 +4755,104 @@ function admDetailClose(e) {
   document.getElementById('admDetailOverlay')?.classList.remove('on');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// TUTORIAL DE PRIMEIRO ACESSO
+// · Flag 'alu_tutorial_done' no localStorage — zero Supabase
+// · 6 passos: boas-vindas, xp bar, stats, modos, dominação, conclusão
+// ══════════════════════════════════════════════════════════════════════
+
+const TUT_STEPS = [
+  { icon:'👋', title:'Bem-vindo ao Aluminas Treino!', body:'Este tour rápido vai te mostrar os principais elementos do app. Levará menos de 1 minuto.', highlight:null },
+  { icon:'⚡', title:'Barra de Progresso', body:'Aqui você acompanha seu nível e quantos produtos dominou. A barra avança conforme você domina mais produtos.', highlight:'.xp-strip', highlightLabel:'↑ Sua barra de nível e dominação' },
+  { icon:'📊', title:'Suas Estatísticas', body:'Taxa de acerto, produtos dominados, quantos restam e sua sequência de dias jogando.', highlight:'.stats-row', highlightLabel:'↑ Acertos · Dominados · Restam · Sequência' },
+  { icon:'🎮', title:'Modos de Treino', body:'Escolha entre vários modos: Foto→Nome, Digitação, Flashcard, Sobrevivência e muito mais. Cada modo tem regras e pontuação próprias.', highlight:'.mode-section', highlightLabel:'↑ Toque em qualquer modo para começar' },
+  { icon:'🏅', title:'Dominando Produtos', body:'Ao acertar um produto 3+ vezes seguidas ele fica dominado e sai do treino normal. Acompanhe tudo na aba Indicadores.', highlight:null },
+  { icon:'🚀', title:'Pronto para começar!', body:'Boa sorte! Jogue todo dia para manter sua sequência 🔥 e subir no ranking.', highlight:null }
+];
+
+let _tutStep = 0, _tutHighlightEl = null;
+
+function initTutorial() {
+  if (localStorage.getItem('alu_tutorial_done')) return;
+  const tryShow = () => {
+    const home = document.getElementById('home');
+    if (home && home.classList.contains('on')) { setTimeout(() => { _tutStep = 0; _tutRender(); }, 800); }
+    else { setTimeout(tryShow, 400); }
+  };
+  tryShow();
+}
+
+function _tutRender() {
+  const overlay = document.getElementById('tutOverlay');
+  const box     = document.getElementById('tutBox');
+  if (!overlay || !box) return;
+  const step = TUT_STEPS[_tutStep];
+  if (!step) { tutSkip(); return; }
+  _tutClearHighlight();
+
+  document.getElementById('tutDots').innerHTML = TUT_STEPS.map((_,i) =>
+    `<div style="width:${i===_tutStep?18:6}px;height:6px;border-radius:99px;background:${i===_tutStep?'var(--blue)':'var(--bg4)'};transition:all .2s"></div>`
+  ).join('');
+  document.getElementById('tutIcon').textContent  = step.icon;
+  document.getElementById('tutTitle').textContent = step.title;
+  document.getElementById('tutBody').textContent  = step.body;
+
+  const hlLabel = document.getElementById('tutHighlight');
+  if (step.highlight && step.highlightLabel) { hlLabel.textContent = step.highlightLabel; hlLabel.style.display = 'block'; }
+  else { hlLabel.style.display = 'none'; }
+
+  const nextBtn = document.getElementById('tutNextBtn');
+  if (nextBtn) nextBtn.textContent = _tutStep >= TUT_STEPS.length - 1 ? 'Concluir ✓' : 'Próximo →';
+
+  overlay.style.display = 'block';
+  box.style.display     = 'flex';
+  _tutPositionBox(step);
+
+  if (step.highlight) {
+    const el = document.querySelector(step.highlight);
+    if (el) { _tutHighlightEl = el; el.classList.add('tut-highlight-el'); el.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }
+}
+
+function _tutPositionBox(step) {
+  const box = document.getElementById('tutBox');
+  if (!box) return;
+  if (!step.highlight) {
+    box.style.cssText += ';top:50%;left:50%;transform:translate(-50%,-50%);bottom:auto;right:auto'; return;
+  }
+  const el = document.querySelector(step.highlight);
+  if (!el) { box.style.cssText += ';top:50%;left:50%;transform:translate(-50%,-50%);bottom:auto;right:auto'; return; }
+  const rect = el.getBoundingClientRect();
+  const vw   = window.innerWidth;
+  box.style.transform = ''; box.style.top = 'auto'; box.style.bottom = 'auto';
+  box.style.left = '50%'; box.style.right = 'auto';
+  box.style.marginLeft = '-' + Math.round(Math.min(320, vw * 0.9) / 2) + 'px';
+  if (window.innerHeight - rect.bottom >= 240) { box.style.top = (rect.bottom + 12 + window.scrollY) + 'px'; }
+  else if (rect.top >= 240)                    { box.style.top = (rect.top - 12 - 280 + window.scrollY) + 'px'; }
+  else                                         { box.style.bottom = '16px'; box.style.top = 'auto'; }
+}
+
+function _tutClearHighlight() {
+  if (_tutHighlightEl) { _tutHighlightEl.classList.remove('tut-highlight-el'); _tutHighlightEl = null; }
+}
+
+function tutNext() {
+  _tutStep++;
+  if (_tutStep >= TUT_STEPS.length) { tutSkip(); return; }
+  _tutRender();
+}
+
+function tutSkip() {
+  _tutClearHighlight();
+  const overlay = document.getElementById('tutOverlay');
+  const box     = document.getElementById('tutBox');
+  if (overlay) overlay.style.display = 'none';
+  if (box)     box.style.display     = 'none';
+  try { localStorage.setItem('alu_tutorial_done', '1'); } catch(e) {}
+}
+
 initAuth();
+initTutorial();
 
 // Auto-recuperação: se após 8s nenhuma página estiver visível, limpa localStorage e recarrega
 setTimeout(() => {
