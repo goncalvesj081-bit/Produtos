@@ -1144,11 +1144,16 @@ async function loadRemoteState() {
         S.totalSessions = Math.max(S.totalSessions || 0, prof.total_sessions|| 0);
         S.totalAnswers  = Math.max(S.totalAnswers || 0,  prof.total_answers || 0);
         S.totalCorrect  = Math.max(S.totalCorrect || 0,  prof.correct_answers || 0);
+        // best_streak: restaura do banco (pode ter sido perdido do localStorage)
+        S.bestStreak    = Math.max(S.bestStreak || 0,    prof.best_streak   || 0);
         // achievements: merge (união dos dois arrays)
         const remoteAchs = prof.achievements || [];
         const localAchs  = S.achievements    || [];
         S.achievements = [...new Set([...localAchs, ...remoteAchs])];
-
+        // _perfectCount: restaura do banco se disponível
+        if (prof.perfect_count != null) {
+          S._perfectCount = Math.max(S._perfectCount || 0, prof.perfect_count || 0);
+        }
       }
       const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
       if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
@@ -1163,7 +1168,17 @@ async function loadRemoteState() {
       console.log('[loadRemoteState] Streak das sessions:', sc.streak, '| lastDay:', sc.lastDay);
 
       _remoteLoaded = true;
-      console.log('[loadRemoteState] OK xp:', S.xp, 'streak:', S.streak);
+      console.log('[loadRemoteState] ✅ Estado remoto carregado:', {
+        xp:             S.xp,
+        streak:         S.streak,
+        bestStreak:     S.bestStreak,
+        totalSessions:  S.totalSessions,
+        totalAnswers:   S.totalAnswers,
+        totalCorrect:   S.totalCorrect,
+        achievements:   S.achievements.length + ' conquistas',
+        stats:          Object.keys(S.stats).length + ' produtos',
+        perfectCount:   S._perfectCount
+      });
     } catch(e){ console.error('loadRemoteState:', e); }
   };
   await Promise.race([fetch(), timeout]);
@@ -1200,7 +1215,8 @@ async function syncProfile() {
       mastered_count:  mastered,
       total_sessions:  S.totalSessions || 0,
       total_answers:   S.totalAnswers  || 0,
-      correct_answers: S.totalCorrect  || 0
+      correct_answers: S.totalCorrect  || 0,
+      perfect_count:   S._perfectCount || 0
     });
     if (error) {
       console.error('[syncProfile] Erro ao salvar perfil:', error);
@@ -1609,7 +1625,19 @@ function updateStat(id, correct) {
 // ── ACHIEVEMENTS ─────────────────────────────────────────────────────
 function grantAch(id) {
   if (S.achievements.includes(id)) return false;
-  S.achievements.push(id); save(); return true;
+  S.achievements.push(id);
+  save();
+  // Sincroniza conquista imediatamente com o banco, sem esperar o fim da rodada
+  if (currentUser && _remoteLoaded) {
+    _supa.from('profiles').upsert({
+      id: currentUser.id,
+      achievements: S.achievements
+    }).then(({ error }) => {
+      if (error) console.error('[grantAch] Erro ao salvar achievement:', error);
+      else console.log('[grantAch] Achievement salvo:', id);
+    });
+  }
+  return true;
 }
 function checkAchs() {
   const add = [];
@@ -1932,7 +1960,21 @@ function submitType(pid) {
 function endGame() {
   clearInterval(G.timer);
   clearInterval(cdTimer);
+
+  // Checa conquistas ANTES do saveRound para que syncProfile inclua as novas
+  const newAchs = checkAchs();
+
+  // Rodada perfeita — verifica após rodada completa
+  if (G.wr === 0 && G.cor >= 10) {
+    if (grantAch('perfect')) newAchs.push('perfect');
+    S._perfectCount = (S._perfectCount||0) + 1;
+    save();
+    if (S._perfectCount >= 3 && grantAch('perfect3')) newAchs.push('perfect3');
+  }
+
+  // Persiste tudo (incluindo conquistas recém-concedidas acima)
   saveRound();
+
   const total = G.cor + G.wr;
   const pct   = total ? Math.round(G.cor/total*100) : 0;
   const icons = pct===100?'🏆':pct>=80?'🎉':pct>=50?'😅':'😓';
@@ -1942,16 +1984,6 @@ function endGame() {
   document.getElementById('resTitle').textContent = titles;
   document.getElementById('resSub').textContent   =
     G.mode==='battle' ? `${G.cor} corretas em 60 segundos` : `${G.cor}/${total} corretas`;
-
-  const newAchs = checkAchs();
-
-  // Rodada perfeita — só verifica aqui, após a rodada completa
-  if (G.wr === 0 && G.cor >= 10) {
-    if (grantAch('perfect')) newAchs.push('perfect');
-    S._perfectCount = (S._perfectCount||0) + 1;
-    save();
-    if (S._perfectCount >= 3 && grantAch('perfect3')) newAchs.push('perfect3');
-  }
 
   document.getElementById('resStats').innerHTML = `
     <div class="res-stat"><div class="rv" style="color:var(--sage)">${G.cor}</div><div class="rl">Certas</div></div>
