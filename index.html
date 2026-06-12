@@ -1199,24 +1199,18 @@ async function loadRemoteState() {
       const{data:prof, error:profErr}=await _supa.from('profiles').select('*').eq('id',currentUser.id).single();
       if(profErr) { console.error('loadRemoteState profiles:', profErr); }
       if(prof){
-        // Só sobrescrever se o valor remoto for MAIOR que o local (proteção contra reset)
-        S.xp            = Math.max(S.xp || 0,            prof.xp            || 0);
-        S.totalSessions = Math.max(S.totalSessions || 0, prof.total_sessions|| 0);
-        S.totalAnswers  = Math.max(S.totalAnswers || 0,  prof.total_answers || 0);
-        S.totalCorrect  = Math.max(S.totalCorrect || 0,  prof.correct_answers || 0);
-        // best_streak: restaura do banco (pode ter sido perdido do localStorage)
-        S.bestStreak    = Math.max(S.bestStreak || 0,    prof.best_streak   || 0);
-        // achievements: merge (união dos dois arrays)
-        const remoteAchs = prof.achievements || [];
-        const localAchs  = S.achievements    || [];
-        S.achievements = [...new Set([...localAchs, ...remoteAchs])];
-        // _perfectCount: restaura do banco se disponível
-        if (prof.perfect_count != null) {
-          S._perfectCount = Math.max(S._perfectCount || 0, prof.perfect_count || 0);
-        }
-        // Restaura escudos do banco se o mês ainda for o mesmo
+        // Banco é a fonte da verdade — sobrescreve localStorage sempre
+        S.xp            = prof.xp             || 0;
+        S.totalSessions = prof.total_sessions  || 0;
+        S.totalAnswers  = prof.total_answers   || 0;
+        S.totalCorrect  = prof.correct_answers || 0;
+        S.bestStreak    = prof.best_streak     || 0;
+        S._perfectCount = prof.perfect_count   || 0;
+        // achievements: o banco sempre ganha (sem merge com local)
+        S.achievements  = prof.achievements    || [];
+        // Escudos: restaura do banco se o mês bater
         if (prof.shields_month && prof.shields_month === isoMonth()) {
-          S.shields      = Math.max(S.shields || 0, prof.shields || 0);
+          S.shields      = prof.shields      || 0;
           S.shieldsMonth = prof.shields_month;
         }
       }
