@@ -648,11 +648,12 @@ input{font-family:inherit;}
     <div style="font-size:.72rem;color:var(--text3);margin-top:2px">Top colaboradores</div>
   </div>
   <!-- tabs -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);padding:3px">
-    <button id="rtab-xp"    onclick="switchRankTab('xp')"    class="rtab rtab-active">⚡ XP</button>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);padding:3px">
+    <button id="rtab-geral" onclick="switchRankTab('geral')" class="rtab rtab-active">🏆 Geral</button>
+    <button id="rtab-xp"    onclick="switchRankTab('xp')"    class="rtab">⚡ XP</button>
     <button id="rtab-dom"   onclick="switchRankTab('dom')"   class="rtab">🏅 Dom.</button>
     <button id="rtab-score" onclick="switchRankTab('score')" class="rtab">🎯 Score</button>
-    <button id="rtab-acc"   onclick="switchRankTab('acc')"   class="rtab">🎯 Acerto</button>
+    <button id="rtab-acc"   onclick="switchRankTab('acc')"   class="rtab">✅ Acerto</button>
   </div>
   <!-- mínimo de respostas para ranking de acertividade -->
   <div id="accMinWrap" style="display:none;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:8px 12px">
@@ -2806,11 +2807,11 @@ function _showPage_unused(id) {
 
 // ── RANKING ──────────────────────────────────────────────────────
 let _rankData = null;
-let _rankTab  = 'xp';
+let _rankTab  = 'geral';
 
 function switchRankTab(tab) {
   _rankTab = tab;
-  ['xp','dom','score','acc'].forEach(t => {
+  ['geral','xp','dom','score','acc'].forEach(t => {
     const el = document.getElementById('rtab-' + t);
     if (el) el.classList.toggle('rtab-active', t === tab);
   });
@@ -2829,6 +2830,27 @@ function rankScore(u) {
   return xp + dom * 50;
 }
 
+// ── SCORE GERAL ABSOLUTO ─────────────────────────────────────────────
+// Cada indicador tem cálculo próprio, independente dos outros usuários.
+// Fórmula:
+//   pts_xp     = (xp / 20)                          → sem teto
+//   pts_acc    = (correct/total * 100)               → 0–100
+//   pts_streak = log(streak + 1) * 20               → cresce, desacelera
+//   pts_dom    = mastered_count                      → sem teto
+//
+// Score = pts_xp*0.35 + pts_acc*0.35 + pts_streak*0.15 + pts_dom*0.15
+function calcGeneralScores(data) {
+  return data.map(u => {
+    const pts_xp     = (u.xp || 0) / 20;
+    const tot        = u.total_answers || 0;
+    const pts_acc    = tot > 0 ? (u.correct_answers || 0) / tot * 100 : 0;
+    const pts_streak = Math.log((u.streak || 0) + 1) * 20;
+    const pts_dom    = u.mastered_count || 0;
+    const general    = pts_xp*0.35 + pts_acc*0.35 + pts_streak*0.15 + pts_dom*0.15;
+    return { ...u, _pts_xp: pts_xp, _pts_acc: pts_acc, _pts_streak: pts_streak, _pts_dom: pts_dom, _accRaw: pts_acc, _general: general };
+  });
+}
+
 function renderRankList(data) {
   const list = document.getElementById('rankingList');
   if (!list) return;
@@ -2838,6 +2860,70 @@ function renderRankList(data) {
     : '';
 
   let sorted, color, label, noteHtml = '', filteredData = data;
+
+  if (_rankTab === 'geral') {
+    const scored = calcGeneralScores(data).sort((a,b) => b._general - a._general);
+    const podiumColors = ['#EAB308','#A1A1AA','#CD7C2F'];
+    const podiumBg     = ['rgba(234,179,8,.08)','rgba(161,161,170,.05)','rgba(205,124,47,.06)'];
+    const podiumBorder = ['rgba(234,179,8,.3)','rgba(161,161,170,.18)','rgba(205,124,47,.22)'];
+    const medals       = ['🥇','🥈','🥉'];
+
+    // chip: label + valor colorido
+    const chip = (lbl, val, col) =>
+      `<span style="display:inline-flex;align-items:center;gap:3px;background:var(--bg4);border-radius:5px;padding:2px 7px;font-size:.6rem">
+        <span style="color:var(--text3)">${lbl}</span>
+        <span style="color:${col};font:700 .64rem 'JetBrains Mono',monospace">${typeof val==='number'?val.toFixed(1):val}</span>
+      </span>`;
+
+    const top3Html = scored.slice(0, 3).map((u, i) => {
+      const isMe   = u.name === myName;
+      const accStr = (u.total_answers||0) > 0 ? u._pts_acc.toFixed(1)+'%' : '—';
+      return `<div style="background:${podiumBg[i]};border:1px solid ${podiumBorder[i]};border-radius:var(--r);padding:12px 14px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:${podiumColors[i]};flex-shrink:0">${medals[i]}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font:700 .9rem 'Inter',sans-serif;color:${i===0?podiumColors[i]:'var(--text)'}${isMe?';text-decoration:underline':''};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name||'—'}${isMe?' <span style="font-weight:400;font-size:.72rem">(você)</span>':''}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+              ${chip('⚡ XP',    u._pts_xp,     '#EAB308')}
+              ${chip('✅ Acerto', accStr,         '#22C55E')}
+              ${chip('🔥 Streak', u._pts_streak, '#F97316')}
+              ${chip('🏅 Dom.',   u._pts_dom,    '#3B82F6')}
+            </div>
+          </div>
+          <div style="flex-shrink:0;text-align:right">
+            <div style="font:800 1.3rem 'JetBrains Mono',monospace;color:${podiumColors[i]}">${u._general.toFixed(1)}</div>
+            <div style="font-size:.58rem;color:var(--text3)">pts</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const restHtml = scored.slice(3).map((u, i) => {
+      const isMe   = u.name === myName;
+      const accStr = (u.total_answers||0) > 0 ? u._pts_acc.toFixed(1)+'%' : '—';
+      return `<div class="rank-row${isMe?' me':''}">
+        <div class="rank-pos">#${i+4}</div>
+        <div class="rank-info">
+          <div class="rank-uname">${u.name||'—'}${isMe?' (você)':''}</div>
+          <div class="rank-meta">⚡${u._pts_xp.toFixed(1)} · ✅${accStr} · 🔥${u._pts_streak.toFixed(1)} · 🏅${u._pts_dom.toFixed(0)}</div>
+        </div>
+        <div class="rank-val" style="color:var(--blue)">${u._general.toFixed(1)} <span style="font-size:.6rem;color:var(--text3)">pts</span></div>
+      </div>`;
+    }).join('');
+
+    list.innerHTML =
+      `<div style="font:700 .82rem Inter,sans-serif;color:var(--text2);padding:4px 0 4px">🏆 Score Geral</div>
+       <div style="font-size:.62rem;color:var(--text3);padding:5px 10px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);margin-bottom:6px;line-height:1.7">
+         ⚡ <b style="color:var(--text)">xp÷20</b> × 35% &nbsp;·&nbsp;
+         ✅ <b style="color:var(--text)">acerto%</b> × 35% &nbsp;·&nbsp;
+         🔥 <b style="color:var(--text)">log(streak+1)×20</b> × 15% &nbsp;·&nbsp;
+         🏅 <b style="color:var(--text)">dominados</b> × 15%
+         ${window._accColsMissing ? '<br><span style="color:var(--orange)">⚠ acertividade zerada — colunas não criadas no Supabase</span>' : ''}
+       </div>
+       <div style="display:flex;flex-direction:column;gap:6px">${top3Html}</div>
+       ${restHtml ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">${restHtml}</div>` : ''}`;
+    return;
+  }
 
   if (_rankTab === 'acc') {
     // Colunas ainda não criadas no Supabase
