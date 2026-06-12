@@ -23,7 +23,7 @@
   --smoke:var(--text3); --smoke2:var(--text2);
   --brick:var(--red); --brick2:#DC2626; --clay:var(--orange);
   --sage:var(--green); --sage2:#16A34A; --amber:var(--gold);
-  --r:8px; --sidebar:200px; --botbar:58px;
+  --r:8px; --sidebar:200px; --botbar:62px;
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -77,14 +77,16 @@ input{font-family:inherit;}
 .bottom-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;
   height:var(--botbar);background:var(--bg2);border-top:1px solid var(--line);z-index:200;
+  padding-bottom:env(safe-area-inset-bottom);
 }
-.bottom-nav-inner{display:flex;height:100%;}
+.bottom-nav-inner{display:flex;height:100%;justify-content:space-between;align-items:center;padding:0 24px;}
 .bnav-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;border:none;background:none;color:var(--text3);
-  font-size:.56rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;border:none;background:none;color:var(--text3);
+  font-size:.55rem;font-weight:700;letter-spacing:.01em;text-transform:uppercase;
+  cursor:pointer;padding:0 8px;white-space:nowrap;min-width:56px;
 }
-.bnav-item .bnav-ico{font-size:1.05rem;line-height:1;}
+.bnav-item .bnav-ico{font-size:1.1rem;line-height:1;flex-shrink:0;}
 .bnav-item.active{color:var(--blue);}
 
 /* HOME LAYOUT */
@@ -145,9 +147,7 @@ input{font-family:inherit;}
 .mode-arr{display:none;}
 .mode-copy{display:contents;}
 
-/* ach */
-.ach-section{display:flex;flex-direction:column;gap:6px;}
-.ach-wrap{display:flex;flex-wrap:wrap;gap:5px;}
+/* ach-pill still used on result screen */
 .ach-pill{
   display:flex;align-items:center;gap:4px;
   background:var(--bg2);border:1px solid var(--line);
@@ -393,8 +393,8 @@ input{font-family:inherit;}
 #masterSheet{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;z-index:301;max-height:80dvh;flex-direction:column;border-top:1px solid var(--line);}
 
 /* TOAST */
-#toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);color:var(--text);border:1px solid var(--line2);border-radius:40px;padding:8px 20px;font:700 .8rem 'Inter',sans-serif;transition:transform .28s cubic-bezier(.34,1.4,.64,1);z-index:9999;white-space:nowrap;pointer-events:none;}
-#toast.on{transform:translateX(-50%) translateY(0);}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(120px);opacity:0;background:var(--bg3);color:var(--text);border:1px solid var(--line2);border-radius:40px;padding:8px 20px;font:700 .8rem 'Inter',sans-serif;transition:transform .28s cubic-bezier(.34,1.4,.64,1),opacity .28s ease;z-index:99999;white-space:nowrap;pointer-events:none;}
+#toast.on{transform:translateX(-50%) translateY(0);opacity:1;}
 
 /* FLOAT SCORE */
 .float-pt{position:fixed;font:800 1.1rem 'JetBrains Mono',monospace;pointer-events:none;z-index:9998;animation:floatup .75s ease forwards;}
@@ -495,6 +495,27 @@ input{font-family:inherit;}
 
 /* tab-inicio is not a tab anymore - always show its content */
 #tab-inicio { display: flex !important; flex-direction: column; gap: 14px; }
+
+/* ── ACHIEVEMENT CARDS ── */
+.ach-card {
+  background: var(--bg3); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 10px 10px 10px 12px;
+  display: flex; align-items: center; gap: 9px;
+  cursor: pointer; transition: border-color .12s, background .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ach-card:active { background: var(--bg4); }
+.ach-card.earned { border-color: var(--gold); background: var(--gold2); }
+.ach-card-ico { font-size: 1.3rem; flex-shrink: 0; }
+.ach-card-info { flex: 1; min-width: 0; }
+.ach-card-name { font: 600 .74rem 'Inter', sans-serif; line-height: 1.25; }
+.ach-card.earned .ach-card-name { color: var(--gold); }
+.ach-card:not(.earned) .ach-card-ico { filter: grayscale(1); opacity: .45; }
+.ach-card:not(.earned) .ach-card-name { color: var(--text3); }
+.ach-card-lock { font-size: .68rem; margin-top: 2px; color: var(--text3); }
+.ach-card.earned .ach-card-lock { color: var(--gold); }
+
+/* modal flex handled via JS */
 </style>
 </head>
 <body>
@@ -531,7 +552,7 @@ input{font-family:inherit;}
   <div class="bottom-nav-inner">
     <button class="bnav-item active" id="bn-home" onclick="navTo('home')"><span class="bnav-ico">🎮</span>Modos</button>
     <button class="bnav-item" id="bn-rank" onclick="navTo('rankingPage')"><span class="bnav-ico">🏆</span>Ranking</button>
-    <button class="bnav-item" id="bn-ind"  onclick="navTo('indicatorsPage')"><span class="bnav-ico">📊</span>Indicadores</button>
+    <button class="bnav-item" id="bn-ind"  onclick="navTo('indicatorsPage')"><span class="bnav-ico">📊</span>Stats</button>
   </div>
 </nav>
 <!-- ══ LOGIN ══ -->
@@ -545,7 +566,7 @@ input{font-family:inherit;}
     <input class="login-input" id="loginName" placeholder="Seu nome" style="display:none">
     <input class="login-input" type="email" id="loginEmail" placeholder="E-mail corporativo">
     <div style="position:relative">
-      <input class="login-input" type="password" id="loginPass" placeholder="Senha" style="padding-right:44px;width:100%">
+      <input class="login-input" type="password" id="loginPass" placeholder="Senha" style="padding-right:44px;width:100%" onkeydown="if(event.key==='Enter')doLogin()">
       <button onclick="togglePass()" type="button" style="position:absolute;right:0;top:0;height:44px;width:44px;background:none;border:none;color:var(--text3);font-size:1rem;display:flex;align-items:center;justify-content:center" id="eyeBtn">👁</button>
     </div>
     <button class="login-btn" onclick="doLogin()" id="loginBtn">Entrar</button>
@@ -616,15 +637,7 @@ input{font-family:inherit;}
     <div class="mode-tile" onclick="startMode('sequence')"><div class="tile-ico">🔢</div><div class="tile-name">Sequência</div><div class="tile-desc">Memorize 3</div></div>
   </div>
 
-  <div class="ach-section">
-    <div class="section-label">Conquistas</div>
-    
-  </div>
   </div><!-- end mode-grid-2col -->
-
-  <!-- achievements -->
-  <div class="sec-header">Conquistas</div>
-  <div style="display:flex;flex-wrap:wrap;gap:6px" id="achWrap"></div>
 
 </div><!-- end #home -->
 
@@ -691,6 +704,21 @@ input{font-family:inherit;}
     <div class="ind-card-title">Por tipo de produto</div>
     <div id="indByType"><div style="font-size:.78rem;color:var(--text3)">Nenhum dado ainda</div></div>
   </div>
+
+  <div class="ind-card2">
+    <div class="ind-card-title">Conquistas</div>
+    <div id="indAchGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
+  </div>
+</div>
+
+<!-- ══ ACHIEVEMENT MODAL ══ -->
+<div id="achModalOverlay" onclick="closeAchModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000"></div>
+<div id="achModal" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2001;width:min(320px,90vw);background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:24px 20px;flex-direction:column;align-items:center;gap:10px;text-align:center">
+  <div id="achModalIcon" style="font-size:2.4rem;line-height:1"></div>
+  <div id="achModalName" style="font:700 1rem 'Inter',sans-serif;letter-spacing:-.2px"></div>
+  <div id="achModalDesc" style="font-size:.78rem;color:var(--text3);line-height:1.4"></div>
+  <div id="achModalStatus" style="margin-top:4px;font:600 .72rem 'Inter',sans-serif;padding:4px 12px;border-radius:20px"></div>
+  <button onclick="closeAchModal()" style="margin-top:6px;background:var(--bg4);border:1px solid var(--line);color:var(--text2);border-radius:8px;padding:7px 24px;font:600 .78rem 'Inter',sans-serif;cursor:pointer">Fechar</button>
 </div>
 
 <!-- DUMMY start of old tab section -->
@@ -1110,47 +1138,6 @@ async function loadRemoteState() {
         const localAchs  = S.achievements    || [];
         S.achievements = [...new Set([...localAchs, ...remoteAchs])];
 
-        // Carregar last_activity_date remoto (usando data local, não UTC)
-        const ld = prof.last_activity_date || prof.last_day || '';
-        let remoteLastActivity = '';
-        if (ld) {
-          if (ld.length <= 10) {
-            remoteLastActivity = ld;
-          } else {
-            const _d = new Date(ld);
-            const _y = _d.getFullYear();
-            const _m = String(_d.getMonth() + 1).padStart(2, '0');
-            const _dy = String(_d.getDate()).padStart(2, '0');
-            remoteLastActivity = `${_y}-${_m}-${_dy}`;
-          }
-        }
-        const remoteStreak   = prof.streak       || 0;
-        const remoteBest     = prof.best_streak  || 0;
-
-        // Recalcular streak com base na data remota (verificar consecutividade)
-        const today = isoToday();
-        let computedStreak = remoteStreak;
-        if (remoteLastActivity) {
-          const diff = daysBetween(remoteLastActivity, today);
-          if (diff === 0) {
-            // Jogou hoje — streak remoto é válido
-            computedStreak = remoteStreak;
-          } else if (diff === 1) {
-            // Jogou ontem — streak ainda ativo (será incrementado no próximo jogo)
-            computedStreak = remoteStreak;
-          } else if (diff > 1) {
-            // Quebrou streak — resetar
-            computedStreak = 0;
-          }
-        } else {
-          computedStreak = 0;
-        }
-
-        // Usar o maior entre local (já calculado) e remoto recalculado
-        S.streak           = Math.max(S.streak || 0, computedStreak);
-        S.bestStreak       = Math.max(S.bestStreak || 0, remoteBest);
-        S.lastActivityDate = remoteLastActivity || S.lastActivityDate || '';
-        S.lastDay          = S.lastActivityDate;
       }
       const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
       if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
@@ -1195,20 +1182,18 @@ async function loadRemoteState() {
         }
         if (uniqueDays.length > 0 && bestFromSessions === 0) bestFromSessions = 1;
         S.bestStreak = bestFromSessions;
-        if (uniqueDays.length > 0) {
-          S.lastActivityDate = uniqueDays[0];
-          S.lastDay = S.lastActivityDate;
-        }
+        // Atualiza lastActivityDate com o dia mais recente para updateStreakOnGameComplete funcionar
+        if (uniqueDays.length > 0) S.lastActivityDate = uniqueDays[0];
         console.log('[loadRemoteState] Streak das sessions:', sessionStreak, '| dias:', uniqueDays.slice(0,7));
       } else {
-        S.streak = Math.max(S.streak || 0, computedStreak);
-        S.bestStreak = Math.max(S.bestStreak || 0, remoteBest);
-        S.lastActivityDate = remoteLastActivity || S.lastActivityDate || '';
-        S.lastDay = S.lastActivityDate;
+        // Sem sessions — zera streak
+        S.streak = 0;
+        S.bestStreak = 0;
+        S.lastActivityDate = '';
       }
 
       _remoteLoaded = true;
-      console.log('[loadRemoteState] OK xp:', S.xp, 'streak:', S.streak, 'lastActivity:', S.lastActivityDate);
+      console.log('[loadRemoteState] OK xp:', S.xp, 'streak:', S.streak);
     } catch(e){ console.error('loadRemoteState:', e); }
   };
   await Promise.race([fetch(), timeout]);
@@ -1240,8 +1225,7 @@ async function syncProfile() {
       xp:             S.xp,
       streak:         S.streak,
       best_streak:    S.bestStreak    || 0,
-      last_day:       S.lastActivityDate || S.lastDay || '',
-      last_activity_date: S.lastActivityDate || '',
+      last_day:       S.lastActivityDate || '',
       achievements:   S.achievements,
       mastered_count: mastered,
       total_sessions: S.totalSessions || 0,
@@ -1285,18 +1269,47 @@ const P   = RAW.map((r, i) => ({
 
 // ── STATE ──────────────────────────────────────────────────────────
 const ACHS = [
-  { id:'first',    icon:'🩸', name:'Primeira Sangria',   desc:'Acerte seu primeiro produto' },
-  { id:'combo5',   icon:'🔥', name:'Combo x5',           desc:'5 respostas seguidas corretas' },
-  { id:'combo10',  icon:'💥', name:'Combo x10',          desc:'10 respostas seguidas corretas' },
-  { id:'perfect',  icon:'⭐', name:'Perfeito!',           desc:'10/10 numa rodada' },
-  { id:'survive',  icon:'💀', name:'Sobrevivente',        desc:'Complete sobrevivência sem errar' },
-  { id:'speed',    icon:'⚡', name:'Velocista',           desc:'30 pontos em 60 segundos' },
-  { id:'streak3',  icon:'📅', name:'3 Dias Seguidos',    desc:'Jogue 3 dias consecutivos' },
+  // ── Primeiros passos ──
+  { id:'first',      icon:'🩸', name:'Primeira Sangria',    desc:'Acerte seu primeiro produto' },
+  { id:'s10',        icon:'🎯', name:'Primeiros 10',        desc:'Responda 10 questões no total' },
+  { id:'s100',       icon:'💯', name:'Centenário',          desc:'Responda 100 questões no total' },
+  { id:'s500',       icon:'🧱', name:'Meio Mil',            desc:'Responda 500 questões no total' },
+  // ── Combos ──
+  { id:'combo5',     icon:'🔥', name:'Combo x5',            desc:'5 respostas seguidas corretas' },
+  { id:'combo10',    icon:'💥', name:'Combo x10',           desc:'10 respostas seguidas corretas' },
+  { id:'combo20',    icon:'🌋', name:'Combo x20',           desc:'20 respostas seguidas corretas' },
+  // ── Rodadas perfeitas ──
+  { id:'perfect',    icon:'⭐', name:'Perfeito!',            desc:'10/10 numa rodada' },
+  { id:'perfect3',   icon:'🌟', name:'Trio Perfeito',       desc:'3 rodadas perfeitas (10/10)' },
+  // ── Modos específicos ──
+  { id:'survive',    icon:'💀', name:'Sobrevivente',         desc:'Complete sobrevivência sem errar' },
+  { id:'speed',      icon:'⚡', name:'Velocista',            desc:'30 acertos em 60 segundos' },
+  { id:'sniper',     icon:'🎯', name:'Franco-Atirador',     desc:'Acerte 5 silhuetas seguidas' },
+  { id:'photohunt',  icon:'🔍', name:'Detetive',            desc:'Complete uma rodada de Caça à Foto sem errar' },
+  { id:'memoryking', icon:'🧩', name:'Rei da Memória',      desc:'Complete Par Perfeito em menos de 10 movimentos' },
+  { id:'typist',     icon:'⌨️', name:'Digitador',           desc:'Acerte 10 seguidos no modo Digite' },
+  // ── Domínio ──
+  { id:'dom10',      icon:'🏅', name:'Dominando',           desc:'Domine 10 produtos' },
+  { id:'dom50',      icon:'🥇', name:'Expert',              desc:'Domine 50 produtos' },
+  { id:'dom100',     icon:'💎', name:'Mestre',              desc:'Domine 100 produtos' },
+  { id:'goat',       icon:'🐐', name:'G.O.A.T.',            desc:'Domine todos os produtos do catálogo' },
+  // ── XP / Nível ──
+  { id:'xp500',      icon:'📈', name:'Em Ascensão',         desc:'Acumule 500 XP' },
+  { id:'xp2000',     icon:'🚀', name:'Decolagem',           desc:'Acumule 2.000 XP' },
+  { id:'lv5',        icon:'🔓', name:'Nível 5',             desc:'Alcance o nível 5' },
+  // ── Treino / Sessões ──
+  { id:'sess5',      icon:'📚', name:'Dedicado',            desc:'Complete 5 treinos' },
+  { id:'sess20',     icon:'🏋️', name:'Atleta',             desc:'Complete 20 treinos' },
+  { id:'allModes',   icon:'🎮', name:'Multiatleta',         desc:'Jogue todos os 12 modos pelo menos uma vez' },
+  // ── Streak ──
+  { id:'streak3',    icon:'📅', name:'3 Dias Seguidos',     desc:'Jogue 3 dias consecutivos' },
+  { id:'streak7',    icon:'🗓️', name:'Semana Inteira',     desc:'Jogue 7 dias consecutivos' },
+  { id:'streak30',   icon:'🏆', name:'Mês Completo',        desc:'Jogue 30 dias consecutivos' },
 ];
 const LEVELS = [0,100,250,500,1000,2000,4000,8000,15000,30000];
 
 let S = {
-  xp:0, streak:0, bestStreak:0, lastDay:'', lastActivityDate:'',
+  xp:0, streak:0, bestStreak:0, lastActivityDate:'',
   achievements:[], stats:{}, history:[],
   totalSessions:0, totalAnswers:0,
   rankings:[]
@@ -1383,24 +1396,12 @@ function load() {
   S.bestStreak    = Number(S.bestStreak)    || 0;
   S.totalSessions = Number(S.totalSessions) || 0;
   S.totalAnswers  = Number(S.totalAnswers)  || 0;
+  S._perfectCount = Number(S._perfectCount) || 0;
   if (!Array.isArray(S.achievements)) S.achievements = [];
   if (!Array.isArray(S.history))      S.history = [];
   if (typeof S.stats !== 'object' || Array.isArray(S.stats)) S.stats = {};
   if (typeof S.lastActivityDate !== 'string') S.lastActivityDate = '';
-
-  // Migrate lastActivityDate format (ISO only)
-  if (S.lastActivityDate && S.lastActivityDate.length > 10) {
-    try { S.lastActivityDate = new Date(S.lastActivityDate).toISOString().slice(0,10); } catch(e) { S.lastActivityDate = ''; }
-  }
-  // Migrate legacy lastDay → lastActivityDate if not set yet
-  if (!S.lastActivityDate && S.lastDay) {
-    const ld = S.lastDay;
-    S.lastActivityDate = ld.length > 10
-      ? (function(){ try { return new Date(ld).toISOString().slice(0,10); } catch(e){ return ''; } })()
-      : ld;
-  }
-  // NOTE: streak is NOT updated here — it is updated only when a game is completed (updateStreakOnGameComplete).
-  // This prevents streak from incrementing just by opening the app.
+  // streak é recalculado das sessions no loadRemoteState — não atualizar aqui
 }
 
 // ── INIT ────────────────────────────────────────────────────────────
@@ -1452,16 +1453,59 @@ function updateHomeUI() {
     const sbE    = document.getElementById('sbEmail'); if(sbE) sbE.textContent = uemail;
   }
 
-  // achievements
-  const wrap = document.getElementById('achWrap');
-  if (wrap) wrap.innerHTML = ACHS.map(a => {
-    const ok = S.achievements.includes(a.id);
-    return `<div class="ach-pill ${ok?'earned':''}">${a.icon} ${a.name} ${ok?'✓':'🔒'}</div>`;
-  }).join('');
   } catch(e) { console.warn('updateHomeUI:', e); }
 }
 
-// ── NAV ─────────────────────────────────────────────────────────────
+// ── ACHIEVEMENT CARDS & MODAL ────────────────────────────────────────
+function renderAchCards() {
+  const grid = document.getElementById('indAchGrid');
+  if (!grid) return;
+  grid.innerHTML = ACHS.map(a => {
+    const ok = S.achievements.includes(a.id);
+    const date = ok && S.achievementDates && S.achievementDates[a.id]
+      ? new Date(S.achievementDates[a.id]).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'})
+      : null;
+    return `<div class="ach-card ${ok?'earned':''}" onclick="openAchModal('${a.id}')">
+      <div class="ach-card-ico">${a.icon}</div>
+      <div class="ach-card-info">
+        <div class="ach-card-name">${a.name}</div>
+        <div class="ach-card-lock">${ok ? (date ? '✓ '+date : '✓ Desbloqueada') : '🔒 Bloqueada'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAchModal(id) {
+  const a = ACHS.find(x => x.id === id);
+  if (!a) return;
+  const ok = S.achievements.includes(a.id);
+  const date = ok && S.achievementDates && S.achievementDates[a.id]
+    ? new Date(S.achievementDates[a.id]).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'})
+    : null;
+
+  document.getElementById('achModalIcon').textContent = a.icon;
+  document.getElementById('achModalName').textContent = a.name;
+  document.getElementById('achModalDesc').textContent = a.desc;
+
+  const statusEl = document.getElementById('achModalStatus');
+  if (ok) {
+    statusEl.textContent = date ? '✓ Desbloqueada em ' + date : '✓ Desbloqueada';
+    statusEl.style.cssText = 'background:var(--gold2);color:var(--gold);border:1px solid var(--gold);margin-top:4px;font:600 .72rem Inter,sans-serif;padding:4px 12px;border-radius:20px';
+  } else {
+    statusEl.textContent = '🔒 Ainda bloqueada';
+    statusEl.style.cssText = 'background:var(--bg4);color:var(--text3);border:1px solid var(--line);margin-top:4px;font:600 .72rem Inter,sans-serif;padding:4px 12px;border-radius:20px';
+  }
+
+  document.getElementById('achModalOverlay').style.display = 'block';
+  document.getElementById('achModal').style.display = 'flex';
+}
+
+function closeAchModal() {
+  document.getElementById('achModalOverlay').style.display = 'none';
+  document.getElementById('achModal').style.display = 'none';
+}
+
+
 function show(id) {
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('on');
@@ -1559,16 +1603,60 @@ function grantAch(id) {
   if (S.achievements.includes(id)) return false;
   S.achievements.push(id); save(); return true;
 }
-function checkAchs(newOnes) {
+function checkAchs() {
   const add = [];
-  if (!S.achievements.includes('first') && (G.cor+G.wr) === 1 && G.cor===1)
-    if (grantAch('first')) add.push('first');
-  if (G.combo >= 5  && grantAch('combo5'))  add.push('combo5');
-  if (G.combo >= 10 && grantAch('combo10')) add.push('combo10');
-  if (G.cor === G.total && G.total >= 10 && grantAch('perfect')) add.push('perfect');
-  if (G.mode==='survival' && G.wr===0 && !G.queue.length && grantAch('survive')) add.push('survive');
-  if (G.mode==='battle' && G.cor>=30 && grantAch('speed')) add.push('speed');
-  if ((S.streak||0)>=3 && grantAch('streak3')) add.push('streak3');
+  const grant = id => { if (grantAch(id)) add.push(id); };
+
+  // ── Primeiros passos ──
+  if (!S.achievements.includes('first') && (G.cor+G.wr) === 1 && G.cor===1) grant('first');
+  const answeredSoFar = (S.totalAnswers||0) + G.cor + G.wr;
+  if (answeredSoFar >= 10)  grant('s10');
+  if (answeredSoFar >= 100) grant('s100');
+  if (answeredSoFar >= 500) grant('s500');
+
+  // ── Combos ──
+  if (G.combo >= 5)  grant('combo5');
+  if (G.combo >= 10) grant('combo10');
+  if (G.combo >= 20) grant('combo20');
+
+  // ── Modos específicos ──
+  if (G.mode==='survival'   && G.wr===0 && !G.queue.length) grant('survive');
+  if (G.mode==='battle'     && G.cor>=30)                   grant('speed');
+  if (G.mode==='silhouette' && G.wr===0 && G.cur>=5)        grant('sniper');
+  if (G.mode==='hunt'       && G.wr===0 && G.cor>=10)       grant('photohunt');
+  if (G.mode==='type'       && G.combo>=10)                  grant('typist');
+
+  // Par Perfeito: verifica movimentos
+  if (G.mode==='parperfeit' && typeof ppState !== 'undefined' &&
+      ppState.matched >= 6 && ppState.moves > 0 && ppState.moves <= 10) grant('memoryking');
+
+  // ── Domínio ──
+  const masteredCount = P.filter(p => dominated(p.id)).length;
+  if (masteredCount >= 10)  grant('dom10');
+  if (masteredCount >= 50)  grant('dom50');
+  if (masteredCount >= 100) grant('dom100');
+  if (masteredCount >= P.length && P.length > 0) grant('goat');
+
+  // ── XP / Nível ──
+  if (S.xp >= 500)         grant('xp500');
+  if (S.xp >= 2000)        grant('xp2000');
+  if (levelOf(S.xp) >= 5) grant('lv5');
+
+  // ── Sessões ──
+  if ((S.totalSessions||0) >= 5)  grant('sess5');
+  if ((S.totalSessions||0) >= 20) grant('sess20');
+
+  // Todos os modos jogados
+  const playedModes = new Set((S.history||[]).map(h => h.mode));
+  const allModeLabels = ['Foto→Nome','Digitação','Flashcard','Sobrevivência',
+    '60 Segundos','Revisão','Caça à Foto','Silhueta','Contagem','Conecta','Par Perfeito','Sequência'];
+  if (allModeLabels.every(m => playedModes.has(m))) grant('allModes');
+
+  // ── Streak ──
+  if ((S.streak||0) >= 3)  grant('streak3');
+  if ((S.streak||0) >= 7)  grant('streak7');
+  if ((S.streak||0) >= 30) grant('streak30');
+
   return add;
 }
 
@@ -1587,8 +1675,13 @@ function floatPts(n, color) {
 let _tt;
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('on');
-  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('on'), 1800);
+  el.textContent = msg;
+  el.classList.remove('on');
+  // forçar reflow para reiniciar a transição mesmo se já estava visível
+  void el.offsetWidth;
+  el.classList.add('on');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.remove('on'), 2000);
 }
 
 // ── START MODE ────────────────────────────────────────────────────────
@@ -1843,6 +1936,14 @@ function endGame() {
     G.mode==='battle' ? `${G.cor} corretas em 60 segundos` : `${G.cor}/${total} corretas`;
 
   const newAchs = checkAchs();
+
+  // Rodada perfeita — só verifica aqui, após a rodada completa
+  if (G.wr === 0 && G.cor >= 10) {
+    if (grantAch('perfect')) newAchs.push('perfect');
+    S._perfectCount = (S._perfectCount||0) + 1;
+    save();
+    if (S._perfectCount >= 3 && grantAch('perfect3')) newAchs.push('perfect3');
+  }
 
   document.getElementById('resStats').innerHTML = `
     <div class="res-stat"><div class="rv" style="color:var(--sage)">${G.cor}</div><div class="rl">Certas</div></div>
@@ -2154,6 +2255,8 @@ function renderIndicadores() {
       </div>`;
     }).join('');
   }
+
+  renderAchCards();
 }
 
 
@@ -2593,11 +2696,6 @@ function seqRenderRecall() {
   gc.innerHTML = `
     <div style="font-size:.75rem;color:var(--text3);font-weight:600;text-align:center;flex-shrink:0">
       ${seqState.cur+1} de ${batch.length} — qual era este produto?
-    </div>
-    <div style="display:flex;justify-content:center;flex-shrink:0">
-      <div style="width:100px;height:100px;border-radius:8px;border:1px solid var(--line);background:#fff;overflow:hidden">
-        <img src="${p.img}" style="width:100%;height:100%;object-fit:contain;padding:4px">
-      </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0">
       ${opts.map((o,i) => `<button class="seq-opt" id="sqo${i}"
