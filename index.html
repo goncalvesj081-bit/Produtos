@@ -517,6 +517,206 @@ input{font-family:inherit;}
 
 /* modal flex handled via JS */
 
+/* ── ADMINISTRAÇÃO ── */
+#adminPage { background: var(--bg); overflow-y: auto; }
+.admin-section {
+  background: var(--bg2); border: 1px solid var(--line);
+  border-radius: var(--r); overflow: hidden;
+}
+.admin-section-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 8px;
+}
+.admin-section-title {
+  font: 700 .78rem 'Inter', sans-serif; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text3);
+}
+.admin-table { width: 100%; border-collapse: collapse; font-size: .72rem; }
+.admin-table th {
+  text-align: left; padding: 7px 12px;
+  font: 700 .62rem 'Inter', sans-serif; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--text3);
+  border-bottom: 1px solid var(--line); background: var(--bg3);
+}
+.admin-table td {
+  padding: 8px 12px; border-bottom: 1px solid var(--line);
+  color: var(--text2); vertical-align: middle;
+}
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: var(--bg3); }
+.admin-stat-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--line);
+}
+.admin-stat-cell {
+  background: var(--bg2); padding: 12px 10px; text-align: center;
+}
+.admin-stat-v {
+  font: 700 1.1rem 'JetBrains Mono', monospace; color: var(--blue);
+}
+.admin-stat-l {
+  font-size: .58rem; color: var(--text3); text-transform: uppercase;
+  letter-spacing: .06em; margin-top: 3px; font-weight: 700;
+}
+.admin-prod-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--line);
+}
+.admin-prod-row:last-child { border-bottom: none; }
+.admin-prod-rank { font: 700 .7rem 'JetBrains Mono', monospace; color: var(--text3); min-width: 20px; }
+.admin-prod-name { flex: 1; font: 500 .75rem 'Inter', sans-serif; }
+.admin-prod-val { font: 700 .72rem 'JetBrains Mono', monospace; }
+.admin-prod-bar-wrap { width: 60px; height: 4px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+.admin-prod-bar { height: 100%; border-radius: 99px; }
+.admin-crown { display: none; }
+.admin-empty { padding: 20px; text-align: center; color: var(--text3); font-size: .78rem; }
+
+/* ── MODAIS ADMIN ── */
+.adm-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.72); z-index: 3000;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+.adm-overlay.on { display: flex; }
+/* Modal de edição — compacto */
+.adm-edit-modal {
+  background: var(--bg2); border: 1px solid var(--line2);
+  border-radius: 14px; width: min(420px, 100%);
+  display: flex; flex-direction: column; gap: 0;
+  overflow: hidden; max-height: 90dvh;
+}
+/* Modal de detalhes — largo */
+.adm-detail-modal {
+  background: var(--bg2); border: 1px solid var(--line2);
+  border-radius: 14px; width: min(760px, 100%);
+  display: flex; flex-direction: column;
+  overflow: hidden; max-height: 90dvh;
+}
+@media (max-width: 600px) {
+  .adm-overlay { padding: 0; align-items: flex-end; }
+  .adm-detail-modal { width: 100%; border-radius: 14px 14px 0 0; max-height: 96dvh; }
+  .adm-edit-modal   { width: 100%; border-radius: 14px 14px 0 0; }
+}
+.adm-modal-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.adm-modal-title { font: 700 .9rem 'Inter', sans-serif; flex: 1; }
+.adm-modal-close {
+  background: var(--bg4); border: 1px solid var(--line);
+  border-radius: 6px; width: 28px; height: 28px;
+  font-size: .9rem; color: var(--text3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.adm-modal-close:hover { border-color: var(--red); color: var(--red); }
+.adm-modal-body { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.adm-modal-foot {
+  padding: 12px 18px; border-top: 1px solid var(--line);
+  display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
+}
+/* Form fields */
+.adm-field { display: flex; flex-direction: column; gap: 5px; }
+.adm-label { font: 600 .68rem 'Inter', sans-serif; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+.adm-input {
+  background: var(--bg3); border: 1px solid var(--line2);
+  border-radius: var(--r); padding: 8px 12px;
+  color: var(--text); font: 500 .85rem 'Inter', sans-serif;
+  width: 100%; outline: none; transition: border-color .12s;
+}
+.adm-input:focus { border-color: var(--blue); }
+.adm-select {
+  background: var(--bg3); border: 1px solid var(--line2);
+  border-radius: var(--r); padding: 8px 12px;
+  color: var(--text); font: 500 .85rem 'Inter', sans-serif;
+  width: 100%; outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 32px;
+}
+.adm-select:focus { border-color: var(--blue); }
+/* Botões modal */
+.adm-btn {
+  padding: 8px 18px; border-radius: var(--r);
+  font: 600 .78rem 'Inter', sans-serif; cursor: pointer;
+  border: 1px solid; transition: opacity .12s;
+}
+.adm-btn:hover { opacity: .82; }
+.adm-btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.adm-btn-ghost   { background: none; border-color: var(--line); color: var(--text3); }
+.adm-btn-danger  { background: var(--red2); border-color: var(--red); color: var(--red); }
+/* Seções do modal de detalhes */
+.adm-det-section { display: flex; flex-direction: column; gap: 8px; }
+.adm-det-stitle {
+  font: 700 .62rem 'Inter', sans-serif; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text3);
+  padding-bottom: 6px; border-bottom: 1px solid var(--line);
+}
+.adm-det-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+.adm-det-grid3 {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+.adm-kv {
+  background: var(--bg3); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 8px 10px;
+}
+.adm-kv-l { font-size: .58rem; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.adm-kv-v { font: 700 .85rem 'JetBrains Mono', monospace; margin-top: 3px; color: var(--text); }
+/* Tabela de modos no modal */
+.adm-mode-table { width: 100%; border-collapse: collapse; font-size: .7rem; }
+.adm-mode-table th {
+  text-align: left; padding: 5px 8px;
+  font: 700 .58rem 'Inter', sans-serif; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text3);
+  border-bottom: 1px solid var(--line); background: var(--bg3);
+}
+.adm-mode-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); color: var(--text2); }
+.adm-mode-table tr:last-child td { border-bottom: none; }
+.adm-mode-table tr:hover td { background: var(--bg3); }
+/* Sessão recente */
+.adm-sess-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--line);
+  font-size: .72rem;
+}
+.adm-sess-row:last-child { border-bottom: none; }
+/* Conquistas no modal */
+.adm-ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.adm-ach-card {
+  background: var(--bg3); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 8px; display: flex; gap: 7px; align-items: center;
+}
+.adm-ach-card.earned { border-color: var(--gold); background: var(--gold2); }
+.adm-ach-card .ico { font-size: 1.1rem; flex-shrink: 0; }
+.adm-ach-card:not(.earned) .ico { filter: grayscale(1); opacity: .4; }
+.adm-ach-name { font: 600 .68rem 'Inter', sans-serif; line-height: 1.25; }
+.adm-ach-card.earned .adm-ach-name { color: var(--gold); }
+.adm-ach-card:not(.earned) .adm-ach-name { color: var(--text3); }
+/* Badge de admin */
+.adm-badge-admin { display: inline-block; background: var(--gold2); border: 1px solid var(--gold); color: var(--gold); border-radius: 20px; padding: 2px 8px; font: 700 .6rem 'Inter', sans-serif; letter-spacing: .02em; }
+.adm-badge-user  { display: inline-block; background: var(--blue2); border: 1px solid var(--blue); color: var(--blue); border-radius: 20px; padding: 2px 8px; font: 700 .6rem 'Inter', sans-serif; letter-spacing: .02em; }
+/* Botão editar na tabela */
+.adm-user-edit-btn {
+  background: var(--bg4); border: 1px solid var(--line);
+  border-radius: 6px; padding: 3px 9px;
+  font: 600 .65rem 'Inter', sans-serif; color: var(--text3);
+  cursor: pointer; white-space: nowrap;
+}
+.adm-user-edit-btn:hover { border-color: var(--blue); color: var(--blue); }
+.adm-user-name-btn {
+  background: none; border: none; padding: 0;
+  font: 600 .78rem 'Inter', sans-serif; color: var(--text);
+  cursor: pointer; text-align: left;
+  text-decoration: underline; text-decoration-style: dotted;
+  text-decoration-color: var(--text3);
+}
+.adm-user-name-btn:hover { color: var(--blue); text-decoration-color: var(--blue); }
+
 /* ── MODO BLOQUEADO ── */
 .mode-tile { position: relative; }
 .mode-tile-lock {
@@ -556,6 +756,7 @@ input{font-family:inherit;}
     <button class="sidebar-item active" id="sb-home" onclick="navTo('home')"><span class="ico">🎮</span> Modos</button>
     <button class="sidebar-item" id="sb-rank" onclick="navTo('rankingPage')"><span class="ico">🏆</span> Ranking</button>
     <button class="sidebar-item" id="sb-ind"  onclick="navTo('indicatorsPage')"><span class="ico">📊</span> Indicadores</button>
+    <button class="sidebar-item" id="sb-admin" onclick="navTo('adminPage')" style="display:none"><span class="ico">👑</span> Administração</button>
   </div>
   <div class="sidebar-user">
     <div class="uname" id="sbName">—</div>
@@ -568,6 +769,7 @@ input{font-family:inherit;}
     <button class="bnav-item active" id="bn-home" onclick="navTo('home')"><span class="bnav-ico">🎮</span>Modos</button>
     <button class="bnav-item" id="bn-rank" onclick="navTo('rankingPage')"><span class="bnav-ico">🏆</span>Ranking</button>
     <button class="bnav-item" id="bn-ind"  onclick="navTo('indicatorsPage')"><span class="bnav-ico">📊</span>Stats</button>
+    <button class="bnav-item" id="bn-admin" onclick="navTo('adminPage')" style="display:none"><span class="bnav-ico">👑</span>Admin</button>
   </div>
 </nav>
 <!-- ══ LOGIN ══ -->
@@ -742,6 +944,125 @@ input{font-family:inherit;}
   <div class="ind-card2">
     <div class="ind-card-title">Conquistas</div>
     <div id="indAchGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px"></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN PAGE ══ -->
+<div class="page" id="adminPage" style="background:var(--bg);padding:20px 20px 80px;gap:14px;overflow-y:auto">
+  <div>
+    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">👑 Administração</div>
+    <div style="font-size:.72rem;color:var(--text3);margin-top:2px">Visão geral da plataforma</div>
+  </div>
+
+  <!-- S1: Estatísticas Gerais -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <span style="font-size:.9rem">📈</span>
+      <div class="admin-section-title">Estatísticas Gerais</div>
+    </div>
+    <div class="admin-stat-grid" id="adminGeneralStats">
+      <div class="admin-stat-cell"><div class="admin-stat-v" id="adTotalUsers">—</div><div class="admin-stat-l">Usuários</div></div>
+      <div class="admin-stat-cell"><div class="admin-stat-v" id="adTotalAnswers">—</div><div class="admin-stat-l">Respostas</div></div>
+      <div class="admin-stat-cell"><div class="admin-stat-v" id="adAvgAcc">—</div><div class="admin-stat-l">Média Acerto</div></div>
+      <div class="admin-stat-cell"><div class="admin-stat-v" id="adTotalXP">—</div><div class="admin-stat-l">XP Total</div></div>
+      <div class="admin-stat-cell"><div class="admin-stat-v" id="adTotalDom">—</div><div class="admin-stat-l">Dominados Total</div></div>
+      <div class="admin-stat-cell"><div class="admin-stat-v" id="adTotalSessions">—</div><div class="admin-stat-l">Sessões Total</div></div>
+    </div>
+  </div>
+
+  <!-- S2: Usuários -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <span style="font-size:.9rem">👤</span>
+      <div class="admin-section-title">Usuários Cadastrados</div>
+      <span id="adUserCount" style="margin-left:auto;font:600 .7rem 'JetBrains Mono',monospace;color:var(--text3)"></span>
+    </div>
+    <div id="adminUserList" style="overflow-x:auto">
+      <div class="admin-empty">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- S3: Ranking Global -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <span style="font-size:.9rem">🏆</span>
+      <div class="admin-section-title">Ranking Global</div>
+    </div>
+    <div id="adminRankList" style="display:flex;flex-direction:column;gap:1px">
+      <div class="admin-empty">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- S4: Produtos Mais Errados -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <span style="font-size:.9rem">❌</span>
+      <div class="admin-section-title">Produtos Mais Errados</div>
+    </div>
+    <div id="adminWrongList">
+      <div class="admin-empty">Carregando...</div>
+    </div>
+  </div>
+
+  <!-- S5: Produtos Mais Acertados -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <span style="font-size:.9rem">✅</span>
+      <div class="admin-section-title">Produtos Mais Acertados</div>
+    </div>
+    <div id="adminRightList">
+      <div class="admin-empty">Carregando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: MODAL EDITAR USUÁRIO ══ -->
+<div id="admEditOverlay" class="adm-overlay" onclick="admEditClose(event)">
+  <div class="adm-edit-modal" onclick="event.stopPropagation()">
+    <div class="adm-modal-head">
+      <span style="font-size:1rem">✏️</span>
+      <div class="adm-modal-title">Editar Usuário</div>
+      <button class="adm-modal-close" onclick="admEditClose()">✕</button>
+    </div>
+    <div class="adm-modal-body">
+      <div id="admEditMsg" style="display:none;padding:8px 12px;border-radius:8px;font:600 .76rem Inter,sans-serif"></div>
+      <div class="adm-field">
+        <div class="adm-label">Nome</div>
+        <input class="adm-input" id="admEditName" placeholder="Nome do usuário" autocomplete="off">
+      </div>
+      <div class="adm-field">
+        <div class="adm-label">E-mail</div>
+        <input class="adm-input" id="admEditEmail" type="email" placeholder="email@exemplo.com" autocomplete="off">
+      </div>
+      <div class="adm-field">
+        <div class="adm-label">Perfil</div>
+        <select class="adm-select" id="admEditRole">
+          <option value="user">👤 Usuário</option>
+          <option value="admin">👑 Administrador</option>
+        </select>
+      </div>
+      <div id="admEditAdminWarn" style="display:none;background:rgba(234,179,8,.1);border:1px solid rgba(234,179,8,.4);border-radius:var(--r);padding:10px 12px;font-size:.72rem;color:var(--gold);line-height:1.5">
+        ⚠️ Você está alterando as permissões administrativas deste usuário. Confirme que isso é intencional.
+      </div>
+    </div>
+    <div class="adm-modal-foot">
+      <button class="adm-btn adm-btn-ghost" onclick="admEditClose()">Cancelar</button>
+      <button class="adm-btn adm-btn-primary" id="admEditSaveBtn" onclick="admEditSave()">Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: MODAL DETALHES DO USUÁRIO ══ -->
+<div id="admDetailOverlay" class="adm-overlay" onclick="admDetailClose(event)">
+  <div class="adm-detail-modal" onclick="event.stopPropagation()">
+    <div class="adm-modal-head">
+      <span style="font-size:1rem">👤</span>
+      <div class="adm-modal-title" id="admDetailTitle">Detalhes do Usuário</div>
+      <button class="adm-modal-close" onclick="admDetailClose()">✕</button>
+    </div>
+    <div class="adm-modal-body" id="admDetailBody">
+      <div class="admin-empty">Carregando...</div>
+    </div>
   </div>
 </div>
 
@@ -1022,12 +1343,15 @@ function showNav() {
 window.addEventListener('resize',showNav);
 
 function navTo(id) {
+  // Guard: só admin pode acessar adminPage
+  if (id === 'adminPage' && !currentUser?.is_admin) return;
+
   // Fechar qualquer página de jogo aberta
   ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'].forEach(gid=>{
     const el=document.getElementById(gid);
     if(el){el.classList.remove('on');el.style.display='none';}
   });
-  const mainPages = ['home','rankingPage','indicatorsPage'];
+  const mainPages = ['home','rankingPage','indicatorsPage','adminPage'];
   mainPages.forEach(p=>{
     const el=document.getElementById(p);
     if(el){
@@ -1037,7 +1361,7 @@ function navTo(id) {
       el.style.display = isActive ? 'flex' : 'none';
     }
   });
-  const map={home:'home',rankingPage:'rank',indicatorsPage:'ind'};
+  const map={home:'home',rankingPage:'rank',indicatorsPage:'ind',adminPage:'admin'};
   Object.keys(map).forEach(pg=>{
     const k=map[pg];
     const sb=document.getElementById('sb-'+k), bn=document.getElementById('bn-'+k);
@@ -1048,10 +1372,11 @@ function navTo(id) {
   localStorage.setItem('lastPage', id);
   if(id==='rankingPage')    setTimeout(loadRankingPage, 50);
   if(id==='indicatorsPage') setTimeout(renderIndicadores, 50);
+  if(id==='adminPage')      setTimeout(loadAdminPage, 50);
 }
 
 function showLogin() {
-  ['home','rankingPage','indicatorsPage'].forEach(p=>{
+  ['home','rankingPage','indicatorsPage','adminPage'].forEach(p=>{
     const el=document.getElementById(p);
     if(el){el.classList.remove('on');el.style.display='none';}
   });
@@ -1067,9 +1392,11 @@ function showApp() {
   if(lg){lg.classList.remove('on');lg.style.display='';}
   showNav();
   // Só restaura se for uma aba principal válida — qualquer outro valor vai para home
-  const VALID_PAGES = ['home','rankingPage','indicatorsPage'];
+  const VALID_PAGES = ['home','rankingPage','indicatorsPage','adminPage'];
   const lastPage = localStorage.getItem('lastPage');
-  navTo(VALID_PAGES.includes(lastPage) ? lastPage : 'home');
+  // adminPage só válido se for admin
+  const resolved = (lastPage === 'adminPage' && !currentUser?.is_admin) ? 'home' : lastPage;
+  navTo(VALID_PAGES.includes(resolved) ? resolved : 'home');
 }
 
 function goHome() {
@@ -1101,11 +1428,12 @@ async function initAuth() {
       showApp();
       updateHomeUI();
       if (loader) loader.style.display = 'none';
-      const VALID_PAGES = ['home', 'rankingPage', 'indicatorsPage'];
+      const VALID_PAGES = ['home', 'rankingPage', 'indicatorsPage', 'adminPage'];
       const activePage = VALID_PAGES.includes(localStorage.getItem('lastPage'))
         ? localStorage.getItem('lastPage') : 'home';
       if (activePage === 'rankingPage')    setTimeout(loadRankingPage,   200);
       if (activePage === 'indicatorsPage') setTimeout(renderIndicadores, 200);
+      if (activePage === 'adminPage' && currentUser?.is_admin) setTimeout(loadAdminPage, 200);
       setTimeout(updateHomeUI, 300);
     } else {
       currentUser = null;
@@ -1208,6 +1536,8 @@ async function loadRemoteState() {
         S._perfectCount = prof.perfect_count   || 0;
         // achievements: o banco sempre ganha (sem merge com local)
         S.achievements  = prof.achievements    || [];
+        // Carregar is_admin
+        currentUser.is_admin = prof.is_admin === true;
         // Escudos: restaura do banco se o mês bater
         if (prof.shields_month && prof.shields_month === isoMonth()) {
           S.shields      = prof.shields      || 0;
@@ -1665,9 +1995,15 @@ function updateHomeUI() {
   if (currentUser) {
     const uname  = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
     const uemail = currentUser.email || '';
-    const nameEl = document.getElementById('homeUserName'); if(nameEl) nameEl.textContent = uname;
-    const sbN    = document.getElementById('sbName');  if(sbN) sbN.textContent = uname;
+    const isAdmin = currentUser.is_admin === true;
+    const crown = isAdmin ? ' 👑' : '';
+    const nameEl = document.getElementById('homeUserName'); if(nameEl) nameEl.textContent = uname + crown;
+    const sbN    = document.getElementById('sbName');  if(sbN) sbN.textContent = uname + crown;
     const sbE    = document.getElementById('sbEmail'); if(sbE) sbE.textContent = uemail;
+    // Mostrar/ocultar itens de admin
+    const sbAdmin = document.getElementById('sb-admin'), bnAdmin = document.getElementById('bn-admin');
+    if (sbAdmin) sbAdmin.style.display = isAdmin ? '' : 'none';
+    if (bnAdmin) bnAdmin.style.display = isAdmin ? '' : 'none';
   }
 
   } catch(e) { console.warn('updateHomeUI:', e); }
@@ -3558,11 +3894,496 @@ function randTypeSubmit(pid) {
   setTimeout(() => { G.cur++; G.answered = false; renderRandom(); }, ok ? 700 : 1200);
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN PAGE
+// ══════════════════════════════════════════════════════════════════════
+
+// Cache dos profiles carregados para uso nos modais
+let _adminProfiles = [];
+
+async function loadAdminPage() {
+  if (!currentUser?.is_admin) return;
+
+  const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const empty = (id, msg) => { const el = document.getElementById(id); if (el) el.innerHTML = `<div class="admin-empty">${msg}</div>`; };
+
+  try {
+    // ── Buscar todos os profiles ──
+    const { data: profiles, error: profErr } = await _supa
+      .from('profiles')
+      .select('id, name, email, xp, streak, best_streak, mastered_count, total_answers, correct_answers, total_sessions, created_at, achievements, is_admin')
+      .order('xp', { ascending: false });
+
+    if (profErr) { console.error('[admin] profiles:', profErr); empty('adminUserList', 'Erro ao carregar usuários.'); return; }
+    if (!profiles || !profiles.length) { empty('adminUserList', 'Nenhum usuário encontrado.'); return; }
+
+    _adminProfiles = profiles;
+
+    // ── SEÇÃO 1: Estatísticas Gerais ──
+    const totalUsers   = profiles.length;
+    const totalAnswers = profiles.reduce((s, u) => s + (u.total_answers || 0), 0);
+    const totalCorrect = profiles.reduce((s, u) => s + (u.correct_answers || 0), 0);
+    const avgAcc       = totalAnswers > 0 ? (totalCorrect / totalAnswers * 100).toFixed(1) + '%' : '—';
+    const totalXP      = profiles.reduce((s, u) => s + (u.xp || 0), 0);
+    const totalDom     = profiles.reduce((s, u) => s + (u.mastered_count || 0), 0);
+    const totalSess    = profiles.reduce((s, u) => s + (u.total_sessions || 0), 0);
+
+    setEl('adTotalUsers',    totalUsers);
+    setEl('adTotalAnswers',  totalAnswers.toLocaleString('pt-BR'));
+    setEl('adAvgAcc',        avgAcc);
+    setEl('adTotalXP',       totalXP.toLocaleString('pt-BR'));
+    setEl('adTotalDom',      totalDom.toLocaleString('pt-BR'));
+    setEl('adTotalSessions', totalSess.toLocaleString('pt-BR'));
+
+    // ── SEÇÃO 2: Tabela de Usuários (com botões) ──
+    setEl('adUserCount', totalUsers + ' usuários');
+    const userRows = profiles.map(u => {
+      const tot     = u.total_answers || 0;
+      const cor     = u.correct_answers || 0;
+      const acc     = tot > 0 ? (cor / tot * 100).toFixed(1) + '%' : '—';
+      const lv      = levelOf(u.mastered_count || 0);
+      const created = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '—';
+      const safeName  = (u.name  || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const safeEmail = (u.email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const isAdmUser = u.is_admin === true;
+      return `<tr>
+        <td>
+          <button class="adm-user-name-btn" onclick="admDetailOpen('${u.id}')">${u.name || '—'}</button>
+          ${isAdmUser ? '<span class="adm-badge-admin" style="margin-left:4px">admin</span>' : ''}
+        </td>
+        <td style="color:var(--text3);font-size:.68rem">${u.email || '—'}</td>
+        <td style="font:600 .72rem 'JetBrains Mono',monospace;color:var(--gold)">${(u.xp||0).toLocaleString('pt-BR')}</td>
+        <td style="font:600 .72rem 'JetBrains Mono',monospace;color:var(--blue)">Nv.${lv}</td>
+        <td style="font:600 .72rem 'JetBrains Mono',monospace;color:var(--green)">${acc}</td>
+        <td style="font:600 .72rem 'JetBrains Mono',monospace;color:var(--blue)">${u.mastered_count || 0}</td>
+        <td style="font:600 .72rem 'JetBrains Mono',monospace;color:var(--orange)">${u.streak || 0}🔥</td>
+        <td style="color:var(--text3);font-size:.68rem">${created}</td>
+        <td><button class="adm-user-edit-btn" onclick="admEditOpen('${u.id}','${safeName}','${safeEmail}',${isAdmUser})">✏️ Editar</button></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('adminUserList').innerHTML = `
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr>
+            <th>Nome</th><th>E-mail</th><th>XP</th><th>Nível</th>
+            <th>% Acerto</th><th>Dominados</th><th>Streak</th><th>Cadastro</th><th>Ações</th>
+          </tr></thead>
+          <tbody>${userRows}</tbody>
+        </table>
+      </div>`;
+
+    // ── SEÇÃO 3: Ranking Global ──
+    const scored = calcGeneralScores(profiles).sort((a, b) => b._general - a._general);
+    const medals = ['🥇','🥈','🥉'];
+    document.getElementById('adminRankList').innerHTML = scored.map((u, i) => {
+      const lv     = levelOf(u.mastered_count || 0);
+      const accStr = (u.total_answers || 0) > 0 ? u._accRaw.toFixed(1) + '%' : '—';
+      return `<div class="admin-prod-row">
+        <div class="admin-prod-rank">${medals[i] || '#'+(i+1)}</div>
+        <div class="admin-prod-name">
+          <span style="font-weight:600">${u.name || '—'}</span>
+          <span style="margin-left:5px;font-size:.6rem;color:var(--text3)">${titleLabel(lv)}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">
+          <div class="admin-prod-val" style="color:var(--gold)">${u._general.toFixed(1)} pts</div>
+          <div style="font-size:.58rem;color:var(--text3)">⚡${(u.xp||0)} · ✅${accStr} · 🏅${u.mastered_count||0}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // ── SEÇÕES 4 & 5: Produtos mais errados / acertados ──
+    const { data: allStats, error: statsErr } = await _supa
+      .from('product_stats')
+      .select('product_id, correct, wrong');
+
+    if (statsErr || !allStats) {
+      empty('adminWrongList', 'Erro ao carregar stats de produtos.');
+      empty('adminRightList', 'Erro ao carregar stats de produtos.');
+      return;
+    }
+
+    const prodAgg = {};
+    allStats.forEach(r => {
+      if (!prodAgg[r.product_id]) prodAgg[r.product_id] = { cor: 0, wr: 0 };
+      prodAgg[r.product_id].cor += r.correct || 0;
+      prodAgg[r.product_id].wr  += r.wrong   || 0;
+    });
+
+    const prodList = Object.entries(prodAgg).map(([pid, st]) => {
+      const total = st.cor + st.wr;
+      const prod  = typeof P !== 'undefined' ? P.find(p => p.id === parseInt(pid)) : null;
+      return {
+        name: prod ? prod.name : `Produto #${pid}`,
+        cor: st.cor, wr: st.wr, total,
+        errRate: total > 0 ? st.wr / total * 100 : 0,
+        accRate: total > 0 ? st.cor / total * 100 : 0,
+      };
+    });
+
+    const topWrong = [...prodList].sort((a, b) => b.wr - a.wr).slice(0, 15);
+    const maxWr    = topWrong[0]?.wr || 1;
+    document.getElementById('adminWrongList').innerHTML = topWrong.length ? topWrong.map((p, i) => `
+      <div class="admin-prod-row">
+        <div class="admin-prod-rank">${i+1}</div>
+        <div class="admin-prod-name">${p.name}</div>
+        <div class="admin-prod-bar-wrap"><div class="admin-prod-bar" style="width:${p.wr/maxWr*100}%;background:var(--red)"></div></div>
+        <div class="admin-prod-val" style="color:var(--red)">${p.wr}</div>
+        <div style="font:600 .62rem 'JetBrains Mono',monospace;color:var(--text3);min-width:36px;text-align:right">${p.errRate.toFixed(0)}%</div>
+      </div>`).join('') : '<div class="admin-empty">Sem dados ainda.</div>';
+
+    const topRight = [...prodList].sort((a, b) => b.cor - a.cor).slice(0, 15);
+    const maxCor   = topRight[0]?.cor || 1;
+    document.getElementById('adminRightList').innerHTML = topRight.length ? topRight.map((p, i) => `
+      <div class="admin-prod-row">
+        <div class="admin-prod-rank">${i+1}</div>
+        <div class="admin-prod-name">${p.name}</div>
+        <div class="admin-prod-bar-wrap"><div class="admin-prod-bar" style="width:${p.cor/maxCor*100}%;background:var(--green)"></div></div>
+        <div class="admin-prod-val" style="color:var(--green)">${p.cor}</div>
+        <div style="font:600 .62rem 'JetBrains Mono',monospace;color:var(--text3);min-width:36px;text-align:right">${p.accRate.toFixed(0)}%</div>
+      </div>`).join('') : '<div class="admin-empty">Sem dados ainda.</div>';
+
+  } catch(e) {
+    console.error('[loadAdminPage] Exceção:', e);
+    document.getElementById('adminUserList').innerHTML = `<div class="admin-empty">Erro inesperado: ${e.message}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN — MODAL EDITAR USUÁRIO
+// ══════════════════════════════════════════════════════════════════════
+let _admEditUserId  = null;
+let _admEditOrigRole = false; // is_admin original do usuário
+
+function admEditOpen(userId, name, email, isAdmin) {
+  if (!currentUser?.is_admin) return;
+  _admEditUserId   = userId;
+  _admEditOrigRole = isAdmin;
+
+  const nameEl  = document.getElementById('admEditName');
+  const emailEl = document.getElementById('admEditEmail');
+  const roleEl  = document.getElementById('admEditRole');
+  const msgEl   = document.getElementById('admEditMsg');
+  const warnEl  = document.getElementById('admEditAdminWarn');
+
+  if (nameEl)  nameEl.value  = name;
+  if (emailEl) emailEl.value = email;
+  if (roleEl)  roleEl.value  = isAdmin ? 'admin' : 'user';
+  if (msgEl)   { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+  if (warnEl)  warnEl.style.display = 'none';
+
+  // Mostrar aviso ao mudar perfil
+  if (roleEl) {
+    roleEl.onchange = () => {
+      const changing = (roleEl.value === 'admin') !== _admEditOrigRole;
+      if (warnEl) warnEl.style.display = changing ? 'block' : 'none';
+    };
+  }
+
+  const overlay = document.getElementById('admEditOverlay');
+  if (overlay) overlay.classList.add('on');
+}
+
+function admEditClose(e) {
+  if (e && e.target !== document.getElementById('admEditOverlay')) return;
+  document.getElementById('admEditOverlay')?.classList.remove('on');
+  _admEditUserId = null;
+}
+
+async function admEditSave() {
+  if (!currentUser?.is_admin) return;
+  if (!_admEditUserId) return;
+
+  const nameVal  = document.getElementById('admEditName')?.value.trim();
+  const emailVal = document.getElementById('admEditEmail')?.value.trim();
+  const roleVal  = document.getElementById('admEditRole')?.value;
+  const isAdminVal = roleVal === 'admin';
+  const msgEl    = document.getElementById('admEditMsg');
+  const btn      = document.getElementById('admEditSaveBtn');
+
+  if (!nameVal)  { admEditMsg('Nome é obrigatório.', 'err'); return; }
+  if (!emailVal) { admEditMsg('E-mail é obrigatório.', 'err'); return; }
+
+  // Confirmação para mudança de permissão
+  if (isAdminVal !== _admEditOrigRole) {
+    const acao = isAdminVal ? 'conceder permissões de administrador' : 'remover permissões de administrador';
+    if (!confirm(`Tem certeza que deseja ${acao} para este usuário?`)) return;
+  }
+
+  if (btn) { btn.textContent = 'Salvando...'; btn.disabled = true; }
+
+  try {
+    const { error } = await _supa
+      .from('profiles')
+      .update({ name: nameVal, email: emailVal, is_admin: isAdminVal })
+      .eq('id', _admEditUserId);
+
+    if (error) {
+      console.error('[admEditSave]', error);
+      admEditMsg('Erro ao salvar: ' + error.message, 'err');
+    } else {
+      admEditMsg('Alterações salvas com sucesso!', 'ok');
+      toast('✓ Usuário atualizado');
+      // Atualizar cache local
+      const idx = _adminProfiles.findIndex(u => u.id === _admEditUserId);
+      if (idx >= 0) {
+        _adminProfiles[idx].name     = nameVal;
+        _adminProfiles[idx].email    = emailVal;
+        _adminProfiles[idx].is_admin = isAdminVal;
+      }
+      setTimeout(() => {
+        document.getElementById('admEditOverlay')?.classList.remove('on');
+        loadAdminPage(); // recarrega a tabela
+      }, 900);
+    }
+  } catch(e) {
+    admEditMsg('Erro inesperado: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.textContent = 'Salvar Alterações'; btn.disabled = false; }
+  }
+}
+
+function admEditMsg(msg, type) {
+  const el = document.getElementById('admEditMsg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.textContent   = msg;
+  el.style.cssText = `display:block;padding:8px 12px;border-radius:8px;font:600 .76rem Inter,sans-serif;${
+    type === 'err'
+      ? 'background:rgba(239,68,68,.15);color:#EF4444;'
+      : 'background:rgba(34,197,94,.15);color:#22C55E;'
+  }`;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN — MODAL DETALHES DO USUÁRIO
+// ══════════════════════════════════════════════════════════════════════
+const MODE_LABELS = {
+  'Foto→Nome':     '🖼 Foto → Nome',
+  'Digitação':     '⌨️ Digite',
+  'Flashcard':     '🧠 Flashcard',
+  'Sobrevivência': '❤️ Sobrevivência',
+  '60 Segundos':   '⚡ 60 Segundos',
+  'Revisão':       '📌 Revisão',
+  'Caça à Foto':   '🔍 Caça à Foto',
+  'Silhueta':      '🎯 Silhueta',
+  'Contagem':      '⏱️ Contagem',
+  'Conecta':       '🔀 Conecta',
+  'Par Perfeito':  '🃏 Par Perfeito',
+  'Sequência':     '🔢 Sequência',
+  'Dupla ou Nada': '🎰 Dupla ou Nada',
+  'Aleatório':     '🎲 Aleatório',
+};
+const MODE_ORDER = Object.keys(MODE_LABELS);
+
+async function admDetailOpen(userId) {
+  if (!currentUser?.is_admin) return;
+
+  const overlay   = document.getElementById('admDetailOverlay');
+  const body      = document.getElementById('admDetailBody');
+  const titleEl   = document.getElementById('admDetailTitle');
+  if (!overlay || !body) return;
+
+  body.innerHTML = '<div class="admin-empty">Carregando...</div>';
+  overlay.classList.add('on');
+
+  try {
+    const u = _adminProfiles.find(p => p.id === userId);
+    if (!u) { body.innerHTML = '<div class="admin-empty">Usuário não encontrado no cache. Recarregue o painel.</div>'; return; }
+    if (titleEl) titleEl.textContent = (u.name || 'Usuário') + ' — Detalhes';
+
+    // ── Buscar product_stats deste usuário ──
+    const { data: pstats } = await _supa
+      .from('product_stats')
+      .select('product_id, correct, wrong, lvl')
+      .eq('user_id', userId);
+
+    // ── Buscar sessões deste usuário ──
+    const { data: sessions } = await _supa
+      .from('sessions')
+      .select('mode, correct, wrong, score, played_at')
+      .eq('user_id', userId)
+      .order('played_at', { ascending: false })
+      .limit(200);
+
+    // Calcular dados derivados
+    const tot    = u.total_answers  || 0;
+    const cor    = u.correct_answers || 0;
+    const acc    = tot > 0 ? (cor / tot * 100).toFixed(1) + '%' : '—';
+    const lv     = levelOf(u.mastered_count || 0);
+    const t      = titleOf(lv);
+    const isAdm  = u.is_admin === true;
+    const created = u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
+
+    // ── Por modo: agregar das sessões ──
+    const modeAgg = {};
+    (sessions || []).forEach(s => {
+      if (!modeAgg[s.mode]) modeAgg[s.mode] = { rounds:0, cor:0, wr:0, bestScore:0 };
+      modeAgg[s.mode].rounds++;
+      modeAgg[s.mode].cor       += s.correct || 0;
+      modeAgg[s.mode].wr        += s.wrong   || 0;
+      modeAgg[s.mode].bestScore = Math.max(modeAgg[s.mode].bestScore, s.score || 0);
+    });
+
+    // ── Produtos mais errados / acertados deste usuário ──
+    const psArr = pstats || [];
+    const topWrU = [...psArr].sort((a,b) => (b.wrong||0) - (a.wrong||0)).slice(0,10);
+    const topCorU = [...psArr].sort((a,b) => (b.correct||0) - (a.correct||0)).slice(0,10);
+
+    const prodName = pid => {
+      const p = typeof P !== 'undefined' ? P.find(x => x.id === parseInt(pid)) : null;
+      return p ? p.name : `Produto #${pid}`;
+    };
+
+    // ── SEÇÃO PERFIL ──
+    const secPerfil = `
+      <div class="adm-det-section">
+        <div class="adm-det-stitle">👤 Perfil</div>
+        <div class="adm-det-grid">
+          <div class="adm-kv"><div class="adm-kv-l">Nome</div><div class="adm-kv-v">${u.name || '—'}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">E-mail</div><div class="adm-kv-v" style="font-size:.72rem;word-break:break-all">${u.email || '—'}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Tipo</div><div class="adm-kv-v">${isAdm ? '<span class="adm-badge-admin">👑 Admin</span>' : '<span class="adm-badge-user">👤 Usuário</span>'}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Nível</div><div class="adm-kv-v" style="color:${t.color}">Nv.${lv} · ${t.title}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">XP Total</div><div class="adm-kv-v" style="color:var(--gold)">${(u.xp||0).toLocaleString('pt-BR')}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Cadastro</div><div class="adm-kv-v" style="font-size:.75rem">${created}</div></div>
+        </div>
+      </div>`;
+
+    // ── SEÇÃO DESEMPENHO ──
+    const secDesempenho = `
+      <div class="adm-det-section">
+        <div class="adm-det-stitle">📊 Desempenho</div>
+        <div class="adm-det-grid3">
+          <div class="adm-kv"><div class="adm-kv-l">Taxa de Acerto</div><div class="adm-kv-v" style="color:var(--green)">${acc}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Dominados</div><div class="adm-kv-v" style="color:var(--blue)">${u.mastered_count||0}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Streak Atual</div><div class="adm-kv-v" style="color:var(--orange)">${u.streak||0}🔥</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Melhor Streak</div><div class="adm-kv-v" style="color:var(--orange)">${u.best_streak||0}🔥</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Total Respostas</div><div class="adm-kv-v">${(u.total_answers||0).toLocaleString('pt-BR')}</div></div>
+          <div class="adm-kv"><div class="adm-kv-l">Total Sessões</div><div class="adm-kv-v">${(u.total_sessions||0).toLocaleString('pt-BR')}</div></div>
+        </div>
+      </div>`;
+
+    // ── SEÇÃO HISTÓRICO DE MODOS ──
+    const modeRows = MODE_ORDER.map(mk => {
+      const agg = modeAgg[mk] || { rounds:0, cor:0, wr:0, bestScore:0 };
+      const mTot = agg.cor + agg.wr;
+      const mAcc = mTot > 0 ? (agg.cor / mTot * 100).toFixed(1) + '%' : '—';
+      const opacity = agg.rounds === 0 ? 'opacity:.4' : '';
+      return `<tr style="${opacity}">
+        <td style="font-weight:600;color:var(--text)">${MODE_LABELS[mk] || mk}</td>
+        <td style="text-align:center">${agg.rounds}</td>
+        <td style="text-align:center;color:var(--green)">${agg.cor}</td>
+        <td style="text-align:center;color:var(--red)">${agg.wr}</td>
+        <td style="text-align:center;color:var(--blue)">${mAcc}</td>
+        <td style="text-align:right;color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:700">${agg.bestScore}</td>
+      </tr>`;
+    }).join('');
+
+    const secModos = `
+      <div class="adm-det-section">
+        <div class="adm-det-stitle">🎮 Histórico de Modos</div>
+        <div style="overflow-x:auto">
+          <table class="adm-mode-table">
+            <thead><tr>
+              <th>Modo</th><th style="text-align:center">Rodadas</th>
+              <th style="text-align:center">Acertos</th><th style="text-align:center">Erros</th>
+              <th style="text-align:center">% Acerto</th><th style="text-align:right">Melhor</th>
+            </tr></thead>
+            <tbody>${modeRows}</tbody>
+          </table>
+        </div>
+      </div>`;
+
+    // ── SEÇÃO HISTÓRICO RECENTE ──
+    const recent = (sessions || []).slice(0, 20);
+    const sessRows = recent.length ? recent.map(s => {
+      const dt   = s.played_at ? new Date(s.played_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+      const sTot = (s.correct||0) + (s.wrong||0);
+      const sAcc = sTot > 0 ? (s.correct / sTot * 100).toFixed(0) + '%' : '—';
+      return `<div class="adm-sess-row">
+        <div style="min-width:80px;color:var(--text3);font-size:.65rem">${dt}</div>
+        <div style="flex:1;font:600 .72rem 'Inter',sans-serif">${MODE_LABELS[s.mode] || s.mode || '—'}</div>
+        <div style="display:flex;gap:6px;font-size:.65rem;color:var(--text3)">
+          <span style="color:var(--green)">✓${s.correct||0}</span>
+          <span style="color:var(--red)">✗${s.wrong||0}</span>
+          <span>${sAcc}</span>
+          <span style="color:var(--gold);font:700 .68rem 'JetBrains Mono',monospace">${(s.score||0)} pts</span>
+        </div>
+      </div>`;
+    }).join('') : '<div class="admin-empty">Nenhuma sessão registrada.</div>';
+
+    const secRecente = `
+      <div class="adm-det-section">
+        <div class="adm-det-stitle">🕓 Histórico Recente (últimas 20 sessões)</div>
+        <div>${sessRows}</div>
+      </div>`;
+
+    // ── SEÇÃO PRODUTOS ──
+    const wrProdRows = topWrU.filter(r => (r.wrong||0) > 0).map((r, i) => `
+      <div class="admin-prod-row" style="padding:6px 10px">
+        <div class="admin-prod-rank">${i+1}</div>
+        <div class="admin-prod-name">${prodName(r.product_id)}</div>
+        <div class="admin-prod-val" style="color:var(--red)">${r.wrong} erros</div>
+      </div>`).join('') || '<div class="admin-empty">Sem dados.</div>';
+
+    const corProdRows = topCorU.filter(r => (r.correct||0) > 0).map((r, i) => `
+      <div class="admin-prod-row" style="padding:6px 10px">
+        <div class="admin-prod-rank">${i+1}</div>
+        <div class="admin-prod-name">${prodName(r.product_id)}</div>
+        <div class="admin-prod-val" style="color:var(--green)">${r.correct} acertos</div>
+      </div>`).join('') || '<div class="admin-empty">Sem dados.</div>';
+
+    const secProdutos = `
+      <div class="adm-det-section">
+        <div class="adm-det-stitle">📦 Produtos</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font:700 .62rem Inter,sans-serif;color:var(--red);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">❌ Mais Errados</div>
+            <div class="admin-section" style="border-radius:var(--r)">${wrProdRows}</div>
+          </div>
+          <div>
+            <div style="font:700 .62rem Inter,sans-serif;color:var(--green);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">✅ Mais Acertados</div>
+            <div class="admin-section" style="border-radius:var(--r)">${corProdRows}</div>
+          </div>
+        </div>
+      </div>`;
+
+    // ── SEÇÃO CONQUISTAS ──
+    const userAchs = Array.isArray(u.achievements) ? u.achievements : [];
+    const achCards = ACHS.map(a => {
+      const ok = userAchs.includes(a.id);
+      return `<div class="adm-ach-card ${ok ? 'earned' : ''}">
+        <div class="ico">${a.icon}</div>
+        <div>
+          <div class="adm-ach-name">${a.name}</div>
+          <div style="font-size:.58rem;color:${ok?'var(--gold)':'var(--text3)'};margin-top:2px">${ok ? '✓ Desbloqueada' : '🔒 Bloqueada'}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const secConquistas = `
+      <div class="adm-det-section">
+        <div class="adm-det-stitle">🏅 Conquistas (${userAchs.length} / ${ACHS.length})</div>
+        <div class="adm-ach-grid">${achCards}</div>
+      </div>`;
+
+    body.innerHTML = secPerfil + secDesempenho + secModos + secRecente + secProdutos + secConquistas;
+
+  } catch(e) {
+    console.error('[admDetailOpen] Exceção:', e);
+    body.innerHTML = `<div class="admin-empty">Erro inesperado: ${e.message}</div>`;
+  }
+}
+
+function admDetailClose(e) {
+  if (e && e.target !== document.getElementById('admDetailOverlay')) return;
+  document.getElementById('admDetailOverlay')?.classList.remove('on');
+}
+
 initAuth();
 
 // Auto-recuperação: se após 8s nenhuma página estiver visível, limpa localStorage e recarrega
 setTimeout(() => {
-  const anyVisible = ['home','rankingPage','indicatorsPage','login'].some(id => {
+  const anyVisible = ['home','rankingPage','indicatorsPage','adminPage','login'].some(id => {
     const el = document.getElementById(id);
     return el && el.classList.contains('on');
   });
