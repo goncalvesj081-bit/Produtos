@@ -482,7 +482,7 @@ input{font-family:inherit;}
 
 /* ── GAME PAGES: fixed overlay so they always appear on top ── */
 #quiz, #flashcard, #typing, #hunt, #silhouette,
-#countdown, #connect, #parperfeit, #sequence, #result {
+#countdown, #connect, #parperfeit, #sequence, #duel, #random, #result {
   position: fixed;
   inset: 0;
   z-index: 500;
@@ -516,6 +516,21 @@ input{font-family:inherit;}
 .ach-card.earned .ach-card-lock { color: var(--gold); }
 
 /* modal flex handled via JS */
+
+/* ── MODO BLOQUEADO ── */
+.mode-tile { position: relative; }
+.mode-tile-lock {
+  position: absolute; inset: 0;
+  background: rgba(13,13,13,.82);
+  border-radius: var(--r);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px; pointer-events: none;
+}
+.mode-tile-lock .lock-ico { font-size: 1.1rem; line-height: 1; }
+.mode-tile-lock .lock-lbl { font: 600 .58rem 'Inter',sans-serif; color: var(--text3); text-align: center; line-height: 1.3; }
+.mode-tile.locked { cursor: default; }
+.mode-tile.locked:active { background: var(--bg2); transform: none; }
 </style>
 </head>
 <body>
@@ -598,8 +613,15 @@ input{font-family:inherit;}
   </div>
 
   <div class="xp-strip">
-    <div class="xp-row"><span id="xpCur">0 XP</span><span id="xpNext">100 XP p/ próx. nível</span></div>
+    <div class="xp-row">
+      <span id="xpCur" style="font-weight:600">0 XP</span>
+      <span id="xpNext" style="color:var(--text3)"></span>
+    </div>
     <div class="xp-track"><div class="xp-fill" id="xpBar" style="width:0%"></div></div>
+    <div class="xp-row" style="margin-top:2px">
+      <span id="xpTitleLabel" style="font-size:.62rem;color:var(--text3)">Trainee · Nv.1</span>
+      <span id="xpNextLabel"  style="font-size:.62rem;color:var(--text3)"></span>
+    </div>
   </div>
 
   <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
@@ -623,18 +645,20 @@ input{font-family:inherit;}
 
   <div class="mode-section">
     <div class="section-label">Modos de treino</div>
-    <div class="mode-tile" onclick="startMode('quiz')"><div class="tile-ico">🖼</div><div class="tile-name">Foto → Nome</div><div class="tile-desc">4 opções</div></div>
-    <div class="mode-tile" onclick="startMode('type')"><div class="tile-ico">⌨️</div><div class="tile-name">Digite</div><div class="tile-desc">Escreva o nome</div></div>
-    <div class="mode-tile" onclick="startMode('flashcard')"><div class="tile-ico">🧠</div><div class="tile-name">Flashcard</div><div class="tile-desc">Vire o card</div></div>
-    <div class="mode-tile" onclick="startMode('survival')"><div class="tile-ico">❤️</div><div class="tile-name">Sobrevivência</div><div class="tile-desc">3 vidas</div></div>
-    <div class="mode-tile" onclick="startMode('battle')"><div class="tile-ico">⚡</div><div class="tile-name">60 Segundos</div><div class="tile-desc">Contra o tempo</div></div>
-    <div class="mode-tile" onclick="startMode('review')"><div class="tile-ico">📌</div><div class="tile-name">Revisão</div><div class="tile-desc">Seus erros</div></div>
-    <div class="mode-tile" onclick="startMode('hunt')"><div class="tile-ico">🔍</div><div class="tile-name">Caça à Foto</div><div class="tile-desc">Ache no grid</div></div>
-    <div class="mode-tile" onclick="startMode('silhouette')"><div class="tile-ico">🎯</div><div class="tile-name">Silhueta</div><div class="tile-desc">Foto pixelada</div></div>
-    <div class="mode-tile" onclick="startMode('countdown')"><div class="tile-ico">⏱️</div><div class="tile-name">Contagem</div><div class="tile-desc">5s por pergunta</div></div>
-    <div class="mode-tile" onclick="startMode('connect')"><div class="tile-ico">🔀</div><div class="tile-name">Conecta</div><div class="tile-desc">Foto + nome</div></div>
-    <div class="mode-tile" onclick="startMode('parperfeit')"><div class="tile-ico">🃏</div><div class="tile-name">Par Perfeito</div><div class="tile-desc">Memory</div></div>
-    <div class="mode-tile" onclick="startMode('sequence')"><div class="tile-ico">🔢</div><div class="tile-name">Sequência</div><div class="tile-desc">Memorize 3</div></div>
+    <div class="mode-tile" data-mode="quiz"       onclick="startMode('quiz')"><div class="tile-ico">🖼</div><div class="tile-name">Foto → Nome</div><div class="tile-desc">4 opções</div></div>
+    <div class="mode-tile" data-mode="type"       onclick="startMode('type')"><div class="tile-ico">⌨️</div><div class="tile-name">Digite</div><div class="tile-desc">Escreva o nome</div></div>
+    <div class="mode-tile" data-mode="flashcard"  onclick="startMode('flashcard')"><div class="tile-ico">🧠</div><div class="tile-name">Flashcard</div><div class="tile-desc">Vire o card</div></div>
+    <div class="mode-tile" data-mode="survival"   onclick="startMode('survival')"><div class="tile-ico">❤️</div><div class="tile-name">Sobrevivência</div><div class="tile-desc">3 vidas</div></div>
+    <div class="mode-tile" data-mode="battle"     onclick="startMode('battle')"><div class="tile-ico">⚡</div><div class="tile-name">60 Segundos</div><div class="tile-desc">Contra o tempo</div></div>
+    <div class="mode-tile" data-mode="review"     onclick="startMode('review')"><div class="tile-ico">📌</div><div class="tile-name">Revisão</div><div class="tile-desc">Seus erros</div></div>
+    <div class="mode-tile" data-mode="hunt"       onclick="startMode('hunt')"><div class="tile-ico">🔍</div><div class="tile-name">Caça à Foto</div><div class="tile-desc">Ache no grid</div></div>
+    <div class="mode-tile" data-mode="silhouette" onclick="startMode('silhouette')"><div class="tile-ico">🎯</div><div class="tile-name">Silhueta</div><div class="tile-desc">Foto pixelada</div></div>
+    <div class="mode-tile" data-mode="countdown"  onclick="startMode('countdown')"><div class="tile-ico">⏱️</div><div class="tile-name">Contagem</div><div class="tile-desc">5s por pergunta</div></div>
+    <div class="mode-tile" data-mode="connect"    onclick="startMode('connect')"><div class="tile-ico">🔀</div><div class="tile-name">Conecta</div><div class="tile-desc">Foto + nome</div></div>
+    <div class="mode-tile" data-mode="parperfeit" onclick="startMode('parperfeit')"><div class="tile-ico">🃏</div><div class="tile-name">Par Perfeito</div><div class="tile-desc">Memory</div></div>
+    <div class="mode-tile" data-mode="sequence"   onclick="startMode('sequence')"><div class="tile-ico">🔢</div><div class="tile-name">Sequência</div><div class="tile-desc">Memorize 3</div></div>
+    <div class="mode-tile" data-mode="duel"       onclick="startMode('duel')"><div class="tile-ico">🎰</div><div class="tile-name">Dupla ou Nada</div><div class="tile-desc">Acumule ou perca tudo</div></div>
+    <div class="mode-tile" data-mode="random"     onclick="startMode('random')"><div class="tile-ico">🎲</div><div class="tile-name">Aleatório</div><div class="tile-desc">Todos os modos</div></div>
   </div>
 
   </div><!-- end mode-grid-2col -->
@@ -901,6 +925,42 @@ input{font-family:inherit;}
 </div>
 
 <!-- ══════════════════════════════════════
+     DUELO (Nome → Foto)
+══════════════════════════════════════ -->
+<div class="page" id="duel">
+  <div class="g-bar">
+    <button class="g-back" onclick="goHome()">← Voltar</button>
+    <span class="g-mode">🎰 Dupla ou Nada</span>
+    <div class="g-score" id="duelScore">0 pts</div>
+  </div>
+  <div class="g-progress">
+    <div class="g-prog-row">
+      <span class="g-prog-txt" id="duelProg">1 / 10</span>
+    </div>
+    <div class="g-track"><div class="g-fill" id="duelFill" style="width:10%"></div></div>
+  </div>
+  <div id="duel-content" style="flex:1;display:flex;flex-direction:column;padding:12px 14px 80px;gap:10px;overflow-y:auto"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ALEATÓRIO
+══════════════════════════════════════ -->
+<div class="page" id="random">
+  <div class="g-bar">
+    <button class="g-back" onclick="goHome()">← Voltar</button>
+    <span class="g-mode" id="randMode">🎲 Aleatório</span>
+    <div class="g-score" id="randScore">0 pts</div>
+  </div>
+  <div class="g-progress">
+    <div class="g-prog-row">
+      <span class="g-prog-txt" id="randProg">1 / 15</span>
+    </div>
+    <div class="g-track"><div class="g-fill" id="randFill" style="width:6%"></div></div>
+  </div>
+  <div id="rand-content" style="flex:1;display:flex;flex-direction:column;padding:12px 14px 80px;gap:10px;overflow-y:auto"></div>
+</div>
+
+<!-- ══════════════════════════════════════
      RANKING
 ══════════════════════════════════════ -->
 
@@ -963,7 +1023,7 @@ window.addEventListener('resize',showNav);
 
 function navTo(id) {
   // Fechar qualquer página de jogo aberta
-  ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'].forEach(gid=>{
+  ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'].forEach(gid=>{
     const el=document.getElementById(gid);
     if(el){el.classList.remove('on');el.style.display='none';}
   });
@@ -1016,7 +1076,7 @@ function goHome() {
   clearInterval(G.timer);
   clearInterval(cdTimer);
   // hide all game pages
-  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'];
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'];
   gamePages.forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.classList.remove('on'); el.style.display = 'none'; }
@@ -1154,6 +1214,11 @@ async function loadRemoteState() {
         if (prof.perfect_count != null) {
           S._perfectCount = Math.max(S._perfectCount || 0, prof.perfect_count || 0);
         }
+        // Restaura escudos do banco se o mês ainda for o mesmo
+        if (prof.shields_month && prof.shields_month === isoMonth()) {
+          S.shields      = Math.max(S.shields || 0, prof.shields || 0);
+          S.shieldsMonth = prof.shields_month;
+        }
       }
       const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
       if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
@@ -1216,7 +1281,9 @@ async function syncProfile() {
       total_sessions:  S.totalSessions || 0,
       total_answers:   S.totalAnswers  || 0,
       correct_answers: S.totalCorrect  || 0,
-      perfect_count:   S._perfectCount || 0
+      perfect_count:   S._perfectCount || 0,
+      shields:         S.shields       || 0,
+      shields_month:   S.shieldsMonth  || ''
     });
     if (error) {
       console.error('[syncProfile] Erro ao salvar perfil:', error);
@@ -1293,12 +1360,113 @@ const ACHS = [
   { id:'streak7',    icon:'🗓️', name:'Semana Inteira',     desc:'Jogue 7 dias consecutivos' },
   { id:'streak30',   icon:'🏆', name:'Mês Completo',        desc:'Jogue 30 dias consecutivos' },
 ];
-const LEVELS = [0,100,250,500,1000,2000,4000,8000,15000,30000];
+const LEVELS = [0,100,250,500,1000,2000,4000,8000,15000,30000]; // legado
 
-let S = {
+// ── SISTEMA DE NÍVEIS — 30 níveis por peças dominadas ────────────────
+// Nv.30 = dominar todo o catálogo (596 produtos)
+const LEVEL_TABLE = [
+  { lv:1,  dom:0   },
+  { lv:2,  dom:2   },
+  { lv:3,  dom:5   },
+  { lv:4,  dom:10  },
+  { lv:5,  dom:15  },
+  { lv:6,  dom:22  },
+  { lv:7,  dom:30  },
+  { lv:8,  dom:38  },
+  { lv:9,  dom:44  },
+  { lv:10, dom:50  },
+  { lv:11, dom:62  },
+  { lv:12, dom:75  },
+  { lv:13, dom:90  },
+  { lv:14, dom:105 },
+  { lv:15, dom:120 },
+  { lv:16, dom:140 },
+  { lv:17, dom:160 },
+  { lv:18, dom:182 },
+  { lv:19, dom:205 },
+  { lv:20, dom:230 },
+  { lv:21, dom:280 },
+  { lv:22, dom:330 },
+  { lv:23, dom:380 },
+  { lv:24, dom:420 },
+  { lv:25, dom:450 },
+  { lv:26, dom:490 },
+  { lv:27, dom:525 },
+  { lv:28, dom:550 },
+  { lv:29, dom:575 },
+  { lv:30, dom:596 },
+];
+
+function levelOf(masteredCount) {
+  const dom = masteredCount || 0;
+  let lv = 1;
+  for (const row of LEVEL_TABLE) {
+    if (dom >= row.dom) lv = row.lv;
+    else break;
+  }
+  return lv;
+}
+
+function xpForNext(masteredCount) {
+  const dom = masteredCount || 0;
+  const lv  = levelOf(dom);
+  if (lv >= 30) return null;
+  const nextRow = LEVEL_TABLE.find(r => r.lv === lv + 1);
+  return nextRow ? nextRow.dom : null;
+}
+
+// ── TÍTULOS ───────────────────────────────────────────────────────────
+const TITLE_MAP = [
+  { maxLv:3,  title:'Trainee',          color:'#9ca3af' },
+  { maxLv:6,  title:'Assistente',        color:'#3b82f6' },
+  { maxLv:10, title:'Analista',          color:'#22c55e' },
+  { maxLv:13, title:'Analista Pleno',    color:'#06b6d4' },
+  { maxLv:17, title:'Especialista',      color:'#a855f7' },
+  { maxLv:20, title:'Especialista Pleno',color:'#6366f1' },
+  { maxLv:23, title:'Sênior',            color:'#f97316' },
+  { maxLv:26, title:'Sênior Pleno',      color:'#ef4444' },
+  { maxLv:29, title:'Lenda ⚡',          color:'#eab308' },
+  { maxLv:30, title:'🏆 Mestre Absoluto',color:'#eab308' },
+];
+
+function titleOf(lv) {
+  return TITLE_MAP.find(t => lv <= t.maxLv) || TITLE_MAP[TITLE_MAP.length-1];
+}
+function titleLabel(lv) { return titleOf(lv).title; }
+function titleColor(lv) { return titleOf(lv).color; }
+function titleBadge(lv) {
+  const t = titleOf(lv);
+  return `<span style="display:inline-block;font-size:.55rem;font-weight:700;padding:1px 6px;border-radius:20px;background:${t.color}22;color:${t.color};border:1px solid ${t.color}55;letter-spacing:.02em;vertical-align:middle;white-space:nowrap">${t.title}</span>`;
+}
+
+// ── ESCUDOS DE STREAK ─────────────────────────────────────────────────
+function shieldsForLevel(lv) {
+  if (lv >= 30) return 5;
+  if (lv >= 24) return 4;
+  if (lv >= 18) return 3;
+  if (lv >= 12) return 2;
+  if (lv >= 6)  return 1;
+  return 0;
+}
+function isoMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function refreshShieldsIfNewMonth() {
+  const month = isoMonth();
+  if (S.shieldsMonth !== month) {
+    const mastered = P && P.length ? P.filter(p => dominated(p.id)).length : 0;
+    const lv = levelOf(mastered);
+    S.shields      = shieldsForLevel(lv);
+    S.shieldsMonth = month;
+    save();
+    console.log('[shields] Novo mês — escudos recarregados:', S.shields, 'para nível', lv);
+  }
+}let S = {
   xp:0, streak:0, bestStreak:0, lastActivityDate:'',
-  achievements:[], stats:{}, history:[],
+  achievements:[], achievementDates:{}, stats:{}, history:[],
   totalSessions:0, totalAnswers:0, totalCorrect:0,
+  shields:0, shieldsMonth:'',
   rankings:[]
 };
 let G = {
@@ -1372,27 +1540,30 @@ function updateStreakOnGameComplete() {
   const last  = S.lastActivityDate || '';
 
   if (!last) {
-    // First ever activity
     S.streak = 1;
   } else if (last === today) {
     // Already played today — do not change streak
   } else {
     const diff = daysBetween(last, today);
     if (diff === 1) {
-      // Played yesterday → extend streak
       S.streak = (S.streak || 0) + 1;
     } else {
-      // Gap > 1 day → reset to 1
-      S.streak = 1;
+      // Streak quebraria — consumir escudo se disponível
+      if ((S.shields || 0) > 0) {
+        S.shields--;
+        save();
+        // Não reseta streak — escudo protege
+        setTimeout(() => toast('🛡️ Escudo usado! Streak protegido.'), 300);
+        console.log('[shields] Escudo consumido. Restam:', S.shields);
+      } else {
+        S.streak = 1;
+      }
     }
   }
 
-  // Update best streak
   if ((S.streak || 0) > (S.bestStreak || 0)) {
     S.bestStreak = S.streak;
   }
-
-  // Record today as last activity date
   S.lastActivityDate = today;
 }
 
@@ -1421,7 +1592,10 @@ function load() {
   S.totalAnswers  = Number(S.totalAnswers)  || 0;
   S.totalCorrect  = Number(S.totalCorrect)  || 0;
   S._perfectCount = Number(S._perfectCount) || 0;
+  S.shields       = Number(S.shields)       || 0;
+  if (typeof S.shieldsMonth !== 'string') S.shieldsMonth = '';
   if (!Array.isArray(S.achievements)) S.achievements = [];
+  if (typeof S.achievementDates !== 'object' || Array.isArray(S.achievementDates)) S.achievementDates = {};
   if (!Array.isArray(S.history))      S.history = [];
   if (typeof S.stats !== 'object' || Array.isArray(S.stats)) S.stats = {};
   if (typeof S.lastActivityDate !== 'string') S.lastActivityDate = '';
@@ -1431,42 +1605,61 @@ function load() {
 // ── INIT ────────────────────────────────────────────────────────────
 function init() {
   load();
+  refreshShieldsIfNewMonth();
   updateHomeUI();
   document.getElementById('prodCount').textContent = P.length + ' produtos';
 }
 
-function levelOf(xp) {
-  for (let i = LEVELS.length-1; i >= 0; i--) if (xp >= LEVELS[i]) return i+1;
-  return 1;
-}
-function xpForNext(xp) {
-  const lv = levelOf(xp);
-  return lv < LEVELS.length ? LEVELS[lv] : null;
-}
 
 function updateHomeUI() {
   try {
-  const lv = levelOf(S.xp);
+  const mastered = P.filter(p => dominated(p.id)).length;
   const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
   const setW = (id,v) => { const el=document.getElementById(id); if(el) el.style.width=v; };
-  set('homeLvl', 'Nv. ' + lv);
-  set('xpCur', S.xp + ' XP');
-  const nx = xpForNext(S.xp);
-  set('xpNext', nx ? nx + ' XP p/ próx. nível' : 'Nível máximo');
-  const prev = LEVELS[lv-1]||0;
-  const pct  = nx ? Math.round((S.xp-prev)/(nx-prev)*100) : 100;
-  setW('xpBar', pct + '%');
 
-  // stats
+  // Nível + título na home pill
+  const lv  = levelOf(mastered);
+  const t   = titleOf(lv);
+  const lvEl = document.getElementById('homeLvl');
+  if (lvEl) {
+    lvEl.textContent = t.title + ' · Nv.' + lv;
+    lvEl.style.borderColor = t.color;
+    lvEl.style.color       = t.color;
+    lvEl.style.background  = t.color + '18';
+  }
+
+  // Barra de dominados
+  const curRow  = LEVEL_TABLE.find(r => r.lv === lv) || LEVEL_TABLE[0];
+  const nextDom = xpForNext(mastered); // threshold de dominados do próx. nível
+  const titleLabelEl = document.getElementById('xpTitleLabel');
+  const nextLabelEl  = document.getElementById('xpNextLabel');
+
+  set('xpCur', mastered + ' dominados');
+
+  if (nextDom !== null) {
+    const pct = Math.min(100, Math.round((mastered - curRow.dom) / (nextDom - curRow.dom) * 100));
+    setW('xpBar', pct + '%');
+    set('xpNext', mastered + ' / ' + nextDom + ' p/ Nv.' + (lv + 1));
+    if (titleLabelEl) { titleLabelEl.textContent = t.title + ' · Nv.' + lv + '  ·  ' + S.xp.toLocaleString('pt-BR') + ' XP'; titleLabelEl.style.color = t.color; }
+    const nextTitle = titleOf(lv + 1);
+    if (nextLabelEl) { nextLabelEl.textContent = '→ ' + nextTitle.title + ' · Nv.' + (lv + 1); nextLabelEl.style.color = nextTitle.color; }
+  } else {
+    setW('xpBar', '100%');
+    set('xpNext', '🏆 Nível máximo!');
+    if (titleLabelEl) { titleLabelEl.textContent = t.title + ' · Nv.' + lv + '  ·  ' + S.xp.toLocaleString('pt-BR') + ' XP'; titleLabelEl.style.color = t.color; }
+    if (nextLabelEl)  { nextLabelEl.textContent = ''; }
+  }
+
+  // Stats row
   let total=0, cor=0;
   Object.values(S.stats).forEach(st => { total+=st.seen; cor+=st.cor; });
-  const mastered = P.filter(p => dominated(p.id)).length;
   set('stPct',      total ? Math.round(cor/total*100)+'%' : '—');
   set('stMastered', mastered);
   set('stRemain',   P.length - mastered);
-  const _sEl = document.getElementById('stStreak'); if(_sEl) _sEl.textContent=(S.streak||0)+'🔥';
+  const stEl = document.getElementById('stStreak');
+  if (stEl) stEl.textContent = (S.streak||0) + '🔥' + (S.shields > 0 ? '  🛡️' + S.shields : '');
 
-  // product count + user name + sidebar
+  // Product count + user name + sidebar
   const pcEl = document.getElementById('prodCount');
   if (pcEl) pcEl.textContent = P.length + ' produtos';
   if (currentUser) {
@@ -1538,7 +1731,7 @@ function show(id) {
   const el = document.getElementById(id);
   if (el) { el.classList.add('on'); el.style.display = 'flex'; }
   // hide sidebar/bottomnav for game pages
-  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','result'];
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'];
   const isGame = gamePages.includes(id);
   const sb = document.getElementById('appSidebar');
   const bn = document.getElementById('appBottomNav');
@@ -1676,7 +1869,7 @@ function checkAchs() {
   // ── XP / Nível ──
   if (S.xp >= 500)         grant('xp500');
   if (S.xp >= 2000)        grant('xp2000');
-  if (levelOf(S.xp) >= 5) grant('lv5');
+  if (levelOf(P.filter(p=>dominated(p.id)).length) >= 5) grant('lv5');
 
   // ── Sessões ──
   if ((S.totalSessions||0) >= 5)  grant('sess5');
@@ -1685,7 +1878,8 @@ function checkAchs() {
   // Todos os modos jogados
   const playedModes = new Set((S.history||[]).map(h => h.mode));
   const allModeLabels = ['Foto→Nome','Digitação','Flashcard','Sobrevivência',
-    '60 Segundos','Revisão','Caça à Foto','Silhueta','Contagem','Conecta','Par Perfeito','Sequência'];
+    '60 Segundos','Revisão','Caça à Foto','Silhueta','Contagem','Conecta','Par Perfeito','Sequência',
+    'Dupla ou Nada','Aleatório'];
   if (allModeLabels.every(m => playedModes.has(m))) grant('allModes');
 
   // ── Streak ──
@@ -1784,6 +1978,16 @@ function startMode(mode) {
     G.score=0; G.cor=0; G.wr=0; G.combo=0; G.cur=0;
     seqState = { phase:'show', batch:[], cur:0, answers:{}, rounds:0 };
     show('sequence'); renderSequence(); return;
+  }
+  if (mode === 'duel') {
+    duelState = { bank: 0, streak: 0, multiplier: 1 };
+    G.queue = buildQueue(10, false); G.total = G.queue.length;
+    show('duel'); renderDuel(); return;
+  }
+  if (mode === 'random') {
+    G.queue = buildQueue(15, false); G.total = 15;
+    G.cur = 0; G.score = 0; G.cor = 0; G.wr = 0;
+    show('random'); renderRandom(); return;
   }
   // quiz default
   G.queue  = buildQueue(10, false);
@@ -2155,7 +2359,8 @@ async function saveRound() {
   const modeLabel = {quiz:'Foto→Nome', hunt:'Caça à Foto', flashcard:'Flashcard',
     type:'Digitação', survival:'Sobrevivência', battle:'60 Segundos', review:'Revisão',
     silhouette:'Silhueta', countdown:'Contagem', connect:'Conecta',
-    parperfeit:'Par Perfeito', sequence:'Sequência'}[G.mode] || G.mode;
+    parperfeit:'Par Perfeito', sequence:'Sequência',
+    duel:'Dupla ou Nada', random:'Aleatório'}[G.mode] || G.mode;
   S.history.unshift({
     mode: modeLabel, cor: G.cor, wr: G.wr,
     pts: G.score, ts: Date.now()
@@ -2202,7 +2407,7 @@ function renderIndicadores() {
   // Stats grid
   const set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
   set('statXP',          S.xp);
-  set('statLvl',         'Nv. ' + levelOf(S.xp));
+  set('statLvl',         titleLabel(levelOf(mastered)) + ' · Nv.' + levelOf(mastered));
   set('statDom',         mastered);
   set('statPctBig',      totAns ? Math.round(totCor/totAns*100)+'%' : '—');
   set('statStreak',      (S.streak||0) + ' dias');
@@ -2828,15 +3033,6 @@ function closeSheet() {
 // ── NAVIGATION ───────────────────────────────────────────────────
 function sidebarNav(id){navTo(id);}
 function bnavNav(id){navTo(id);}
-function _showPage_unused(id) {
-  ['home','rankingPage','indicatorsPage'].forEach(p => {
-    const el = document.getElementById(p);
-    if (el) el.classList.toggle('on', p === id);
-  });
-  if (id === 'rankingPage') loadRankingPage();
-  if (id === 'indicatorsPage') renderIndicadores();
-}
-
 // ── RANKING ──────────────────────────────────────────────────────
 let _rankData = null;
 let _rankTab  = 'geral';
@@ -2910,11 +3106,15 @@ function renderRankList(data) {
     const top3Html = scored.slice(0, 3).map((u, i) => {
       const isMe   = u.name === myName;
       const accStr = (u.total_answers||0) > 0 ? u._pts_acc.toFixed(1)+'%' : '—';
+      const _lv    = levelOf(u.mastered_count||0);
       return `<div style="background:${podiumBg[i]};border:1px solid ${podiumBorder[i]};border-radius:var(--r);padding:12px 14px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font:700 1.2rem 'JetBrains Mono',monospace;color:${podiumColors[i]};flex-shrink:0">${medals[i]}</div>
           <div style="flex:1;min-width:0">
-            <div style="font:700 .9rem 'Inter',sans-serif;color:${i===0?podiumColors[i]:'var(--text)'}${isMe?';text-decoration:underline':''};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name||'—'}${isMe?' <span style="font-weight:400;font-size:.72rem">(você)</span>':''}</div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font:700 .9rem 'Inter',sans-serif;color:${i===0?podiumColors[i]:'var(--text)'}${isMe?';text-decoration:underline':''}">${u.name||'—'}${isMe?' <span style="font-weight:400;font-size:.72rem">(você)</span>':''}</span>
+              ${titleBadge(_lv)}
+            </div>
             <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
               ${chip('⚡ XP',    u._pts_xp,     '#EAB308')}
               ${chip('✅ Acerto', accStr,         '#22C55E')}
@@ -2933,10 +3133,11 @@ function renderRankList(data) {
     const restHtml = scored.slice(3).map((u, i) => {
       const isMe   = u.name === myName;
       const accStr = (u.total_answers||0) > 0 ? u._pts_acc.toFixed(1)+'%' : '—';
+      const _lv    = levelOf(u.mastered_count||0);
       return `<div class="rank-row${isMe?' me':''}">
         <div class="rank-pos">#${i+4}</div>
         <div class="rank-info">
-          <div class="rank-uname">${u.name||'—'}${isMe?' (você)':''}</div>
+          <div class="rank-uname" style="display:flex;align-items:center;gap:5px">${u.name||'—'}${isMe?' (você)':''} ${titleBadge(_lv)}</div>
           <div class="rank-meta">⚡${u._pts_xp.toFixed(1)} · ✅${accStr} · 🔥${u._pts_streak.toFixed(1)} · 🏅${u._pts_dom.toFixed(0)}</div>
         </div>
         <div class="rank-val" style="color:var(--blue)">${u._general.toFixed(1)} <span style="font-size:.6rem;color:var(--text3)">pts</span></div>
@@ -3024,20 +3225,23 @@ function renderRankList(data) {
           <div style="height:100%;width:${barW}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .4s"></div></div>`;
       } else if (_rankTab === 'xp') {
         valDisplay = (u.xp||0) + ' XP';
-        metaLine   = `Nv.${levelOf(u.xp||0)} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas · 🏅${u.mastered_count||0} dom.`;
+        const _lv = levelOf(u.mastered_count||0);
+        metaLine   = `${titleBadge(_lv)} Nv.${_lv} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas · 🏅${u.mastered_count||0} dom.`;
       } else if (_rankTab === 'dom') {
         valDisplay = (u.mastered_count||0) + ' dom.';
-        metaLine   = `Nv.${levelOf(u.xp||0)} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas · ⚡${u.xp||0} XP`;
+        const _lv = levelOf(u.mastered_count||0);
+        metaLine   = `${titleBadge(_lv)} Nv.${_lv} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas · ⚡${u.xp||0} XP`;
       } else {
         valDisplay = rankScore(u) + ' pts';
-        metaLine   = `Nv.${levelOf(u.xp||0)} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas · 🏅${u.mastered_count||0} dom.`;
+        const _lv = levelOf(u.mastered_count||0);
+        metaLine   = `${titleBadge(_lv)} Nv.${_lv} · 🔥${u.streak||0} dias · ${(u.achievements||[]).length} conquistas · 🏅${u.mastered_count||0} dom.`;
       }
 
       return `<div class="rank-row${isMe?' me':''}">
         <div class="rank-pos">${medals[i]||'#'+(i+1)}</div>
         <div class="rank-info">
           <div class="rank-uname">${u.name||'—'}${isMe?' (você)':''}</div>
-          <div class="rank-meta">${metaLine}</div>
+          <div class="rank-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${metaLine}</div>
           ${barHtml}
         </div>
         <div class="rank-val" style="color:${color}">${valDisplay}</div>
@@ -3108,6 +3312,250 @@ async function loadRankingPage() {
     console.error('[loadRankingPage] Exceção:', e);
     list.innerHTML = `<div style="text-align:center;color:var(--red);padding:16px;font-size:.78rem">Erro inesperado: ${e.message}</div>`;
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MODO DUELO — "Dupla ou Nada"
+// Vê a foto, digita o nome. Acertou → pontos dobram na sequência.
+// Errou → perde tudo que acumulou na sequência e recomeça do zero.
+// ══════════════════════════════════════════════════════════════════════
+let duelState = { bank: 0, streak: 0, multiplier: 1 };
+
+function renderDuel() {
+  if (G.cur >= G.queue.length) { endGame(); return; }
+  const p = G.queue[G.cur];
+
+  // Atualizar header
+  document.getElementById('duelProg').textContent  = (G.cur+1) + ' / ' + G.total;
+  document.getElementById('duelFill').style.width  = ((G.cur+1)/G.total*100) + '%';
+  document.getElementById('duelScore').textContent = G.score + ' pts';
+
+  const mult = duelState.multiplier;
+  const bank = duelState.bank;
+  const streak = duelState.streak;
+
+  const c = document.getElementById('duel-content');
+  c.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex-shrink:0">
+      <img src="${p.img}" style="width:100%;height:200px;object-fit:contain;padding:14px;background:#fff;display:block">
+    </div>
+    ${streak > 0 ? `
+    <div style="display:flex;justify-content:center;gap:8px">
+      <div style="background:var(--gold2);border:1px solid var(--gold);border-radius:var(--r);padding:6px 14px;text-align:center">
+        <div style="font:800 1.1rem 'JetBrains Mono',monospace;color:var(--gold)">${bank} pts</div>
+        <div style="font-size:.6rem;color:var(--text3)">em jogo · ×${mult} próx.</div>
+      </div>
+    </div>` : `
+    <div style="text-align:center;font-size:.68rem;color:var(--text3)">Acerte para acumular · Erre e perde tudo!</div>`}
+    <div style="display:flex;gap:8px">
+      <input id="duelInp" class="type-inp" placeholder="Nome do produto..." autocomplete="off"
+        oninput="duelCheckSim()" onkeydown="if(event.key==='Enter')duelSubmit()">
+      <button class="type-go" onclick="duelSubmit()">→</button>
+    </div>
+    <div id="duelSim" style="font-size:.68rem;color:var(--text3);min-height:18px;text-align:center"></div>
+    <button onclick="duelSkip()" style="background:none;border:1px solid var(--line);border-radius:var(--r);
+      padding:8px;font-size:.72rem;color:var(--text3);width:100%">Pular (perde acúmulo)</button>
+  `;
+  document.getElementById('duelInp')?.focus();
+}
+
+function duelCheckSim() {
+  const inp = document.getElementById('duelInp');
+  const sim = document.getElementById('duelSim');
+  if (!inp || !sim) return;
+  const v = inp.value.trim().toLowerCase();
+  if (!v) { sim.textContent = ''; return; }
+  const p = G.queue[G.cur];
+  const match = v.split(' ').filter(Boolean).every(w => p.name.toLowerCase().includes(w));
+  sim.textContent = match ? '✓ parece certo...' : '';
+  sim.style.color = 'var(--green)';
+}
+
+function duelSubmit() {
+  const inp = document.getElementById('duelInp');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) return;
+  const p   = G.queue[G.cur];
+  const ok  = val.toLowerCase().split(' ').filter(Boolean)
+                 .every(w => p.name.toLowerCase().includes(w))
+              && val.length >= 3;
+  duelResolve(ok, p);
+}
+
+function duelSkip() {
+  const p = G.queue[G.cur];
+  duelResolve(false, p, true);
+}
+
+function duelResolve(ok, p, skipped = false) {
+  const BASE_PTS = 30;
+  const c = document.getElementById('duel-content');
+
+  if (ok) {
+    const earned = BASE_PTS * duelState.multiplier;
+    duelState.bank      += earned;
+    duelState.streak    += 1;
+    duelState.multiplier = Math.min(8, duelState.multiplier * 2);
+    G.cor++; G.combo++;
+    addXP(earned); G.score += earned;
+    floatPts('+' + earned, 'var(--gold)');
+    updateStat(p.id, true);
+    checkAchs();
+
+    // flash verde
+    c.style.background = 'rgba(34,197,94,.08)';
+    c.style.borderRadius = 'var(--r)';
+    toast(`✓ +${earned} pts · ×${duelState.multiplier} próxima`);
+    setTimeout(() => { c.style.background = ''; G.cur++; renderDuel(); }, 900);
+  } else {
+    const lost = duelState.bank;
+    duelState.bank       = 0;
+    duelState.streak     = 0;
+    duelState.multiplier = 1;
+    G.wr++; G.combo = 0;
+    updateStat(p.id, false);
+
+    c.style.background = 'rgba(239,68,68,.08)';
+    c.style.borderRadius = 'var(--r)';
+    toast(skipped ? `Pulou — ${lost} pts perdidos` : `✗ Era: ${p.name} · ${lost} pts perdidos`);
+
+    // mostra resposta brevemente
+    c.innerHTML += `<div style="text-align:center;padding:8px;background:var(--red2);border-radius:var(--r);
+      font:700 .82rem 'Inter',sans-serif;color:var(--red)">${p.name}</div>`;
+    setTimeout(() => { c.style.background = ''; G.cur++; renderDuel(); }, 1400);
+  }
+  document.getElementById('duelScore').textContent = G.score + ' pts';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MODO ALEATÓRIO — questão a questão, formato sorteia a cada pergunta
+// Formatos: quiz (4 opções), type (digitar), hunt (achar no grid 4)
+// ══════════════════════════════════════════════════════════════════════
+const RAND_TYPES = ['quiz', 'type', 'hunt'];
+let randCurType  = '';
+
+function renderRandom() {
+  if (G.cur >= G.queue.length) { endGame(); return; }
+
+  // Sorteia formato para esta questão
+  randCurType = RAND_TYPES[Math.floor(Math.random() * RAND_TYPES.length)];
+
+  const p    = G.queue[G.cur];
+  const prog = (G.cur+1) + ' / ' + G.total;
+  const pct  = ((G.cur+1)/G.total*100) + '%';
+  document.getElementById('randProg').textContent  = prog;
+  document.getElementById('randFill').style.width  = pct;
+  document.getElementById('randScore').textContent = G.score + ' pts';
+
+  const modeIco = { quiz:'📷', type:'⌨️', hunt:'🔍' }[randCurType];
+  document.getElementById('randMode').textContent = `🎲 ${modeIco} Aleatório`;
+
+  const c = document.getElementById('rand-content');
+
+  if (randCurType === 'quiz') {
+    // 4 opções de nome
+    const opts = shuffle([p, ...getDistractors(p, 3)]);
+    c.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex-shrink:0">
+        <img src="${p.img}" style="width:100%;height:200px;object-fit:contain;padding:14px;background:#fff;display:block">
+      </div>
+      <div style="font-size:.6rem;color:var(--text3);text-align:center">📷 Qual é o nome?</div>
+      <div class="q-opts">
+        ${opts.map((o,i) => `<button class="q-opt" onclick="randAnswer(${o.id===p.id},${p.id},'ropt${i}','ropt')"
+          id="ropt${i}"><span class="q-key">${['A','B','C','D'][i]}</span>${o.name}</button>`).join('')}
+      </div>`;
+
+  } else if (randCurType === 'type') {
+    c.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex-shrink:0">
+        <img src="${p.img}" style="width:100%;height:200px;object-fit:contain;padding:14px;background:#fff;display:block">
+      </div>
+      <div style="font-size:.6rem;color:var(--text3);text-align:center">⌨️ Digite o nome</div>
+      <div style="display:flex;gap:8px">
+        <input id="randInp" class="type-inp" placeholder="Nome do produto..." autocomplete="off"
+          onkeydown="if(event.key==='Enter')randTypeSubmit(${p.id})">
+        <button class="type-go" onclick="randTypeSubmit(${p.id})">→</button>
+      </div>
+      <div id="randTypeFb" style="font-size:.72rem;color:var(--text3);text-align:center;min-height:20px"></div>`;
+    document.getElementById('randInp')?.focus();
+
+  } else {
+    // hunt: ache a foto certa num grid de 4
+    const pool = shuffle([p, ...getDistractors(p, 3)]);
+    c.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:12px;flex-shrink:0">
+        <div style="font-size:.62rem;color:var(--text3);text-align:center;margin-bottom:6px">🔍 Encontre:</div>
+        <div style="font:700 .95rem 'Inter',sans-serif;text-align:center;line-height:1.3">${p.name}</div>
+        ${p.line ? `<div style="font-size:.65rem;color:var(--text3);text-align:center;margin-top:2px">${p.line}</div>` : ''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${pool.map(o => `
+          <div class="hunt-card" onclick="randAnswer(${o.id===p.id},${p.id},'rhc${o.id}','rhc')" id="rhc${o.id}"
+            style="max-height:140px">
+            <img src="${o.img}" style="width:100%;height:100%;object-fit:contain;padding:6px">
+          </div>`).join('')}
+      </div>`;
+  }
+}
+
+function randAnswer(correct, pid, clickedId, prefix) {
+  if (G.answered) return;
+  G.answered = true;
+  const p = G.queue[G.cur];
+
+  if (correct) {
+    const pts = 20;
+    G.cor++; G.combo++; G.score += pts; addXP(pts);
+    floatPts('+' + pts, 'var(--green)');
+    updateStat(pid, true); checkAchs();
+    toast('✓ Correto!');
+    document.getElementById(clickedId)?.classList.add('correct');
+  } else {
+    G.wr++; G.combo = 0;
+    updateStat(pid, false);
+    toast('✗ ' + p.name);
+    document.getElementById(clickedId)?.classList.add('wrong');
+    // Highlight correct
+    if (prefix === 'ropt') {
+      document.querySelectorAll('.q-opt').forEach(b => {
+        if (b.textContent.includes(p.name)) b.classList.add('correct');
+      });
+    } else {
+      document.querySelectorAll(`[id^="${prefix}"]`).forEach(b => {
+        if (b.id === prefix + pid) b.classList.add('correct');
+      });
+    }
+  }
+  document.getElementById('randScore').textContent = G.score + ' pts';
+  setTimeout(() => { G.cur++; G.answered = false; renderRandom(); }, correct ? 700 : 1200);
+}
+
+function randTypeSubmit(pid) {
+  if (G.answered) return;
+  const inp = document.getElementById('randInp');
+  if (!inp || !inp.value.trim()) return;
+  const p   = G.queue[G.cur];
+  const val = inp.value.trim().toLowerCase();
+  const ok  = val.split(' ').filter(Boolean).every(w => p.name.toLowerCase().includes(w)) && val.length >= 3;
+  G.answered = true;
+
+  const fb = document.getElementById('randTypeFb');
+  if (ok) {
+    const pts = 20;
+    G.cor++; G.combo++; G.score += pts; addXP(pts);
+    floatPts('+' + pts, 'var(--green)');
+    updateStat(pid, true); checkAchs();
+    toast('✓ Correto!');
+    if (fb) { fb.textContent = '✓ ' + p.name; fb.style.color = 'var(--green)'; }
+  } else {
+    G.wr++; G.combo = 0;
+    updateStat(pid, false);
+    toast('✗ Era: ' + p.name);
+    if (fb) { fb.textContent = '✗ ' + p.name; fb.style.color = 'var(--red)'; }
+  }
+  document.getElementById('randScore').textContent = G.score + ' pts';
+  setTimeout(() => { G.cur++; G.answered = false; renderRandom(); }, ok ? 700 : 1200);
 }
 
 initAuth();
