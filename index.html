@@ -1063,9 +1063,21 @@ async function doLogin() {
   if(_regMode){
     const{error}=await _supa.auth.signUp({email,password:pass,options:{data:{name}}});
     if(error){setMsg(error.message,'err');if(btn){btn.textContent='Cadastrar';btn.disabled=false;}return;}
+    setMsg('Conta criada! Verifique seu e-mail se necessário.','ok');
+    if(btn){btn.textContent='Cadastrar';btn.disabled=false;}
   } else {
-    const{error}=await _supa.auth.signInWithPassword({email,password:pass});
+    const{data,error}=await _supa.auth.signInWithPassword({email,password:pass});
     if(error){setMsg('E-mail ou senha incorretos','err');if(btn){btn.textContent='Entrar';btn.disabled=false;}return;}
+    // Processar sessão diretamente — não depender do onAuthStateChange
+    if(data && data.session){
+      currentUser = data.session.user;
+      load();
+      await loadRemoteState();
+      showApp();
+      updateHomeUI();
+      const loader=document.getElementById('appLoader');
+      if(loader) loader.style.display='none';
+    }
   }
 }
 
@@ -1091,23 +1103,112 @@ async function loadRemoteState() {
       if(prof){
         // Só sobrescrever se o valor remoto for MAIOR que o local (proteção contra reset)
         S.xp            = Math.max(S.xp || 0,            prof.xp            || 0);
-        S.streak        = Math.max(S.streak || 0,        prof.streak        || 0);
-        S.bestStreak    = Math.max(S.bestStreak || 0,    prof.best_streak   || 0);
         S.totalSessions = Math.max(S.totalSessions || 0, prof.total_sessions|| 0);
         S.totalAnswers  = Math.max(S.totalAnswers || 0,  prof.total_answers || 0);
         // achievements: merge (união dos dois arrays)
         const remoteAchs = prof.achievements || [];
         const localAchs  = S.achievements    || [];
         S.achievements = [...new Set([...localAchs, ...remoteAchs])];
-        const ld = prof.last_day || '';
-        S.lastDay = ld.length > 10 ? new Date(ld).toISOString().slice(0,10) : ld;
+
+        // Carregar last_activity_date remoto (usando data local, não UTC)
+        const ld = prof.last_activity_date || prof.last_day || '';
+        let remoteLastActivity = '';
+        if (ld) {
+          if (ld.length <= 10) {
+            remoteLastActivity = ld;
+          } else {
+            const _d = new Date(ld);
+            const _y = _d.getFullYear();
+            const _m = String(_d.getMonth() + 1).padStart(2, '0');
+            const _dy = String(_d.getDate()).padStart(2, '0');
+            remoteLastActivity = `${_y}-${_m}-${_dy}`;
+          }
+        }
+        const remoteStreak   = prof.streak       || 0;
+        const remoteBest     = prof.best_streak  || 0;
+
+        // Recalcular streak com base na data remota (verificar consecutividade)
+        const today = isoToday();
+        let computedStreak = remoteStreak;
+        if (remoteLastActivity) {
+          const diff = daysBetween(remoteLastActivity, today);
+          if (diff === 0) {
+            // Jogou hoje — streak remoto é válido
+            computedStreak = remoteStreak;
+          } else if (diff === 1) {
+            // Jogou ontem — streak ainda ativo (será incrementado no próximo jogo)
+            computedStreak = remoteStreak;
+          } else if (diff > 1) {
+            // Quebrou streak — resetar
+            computedStreak = 0;
+          }
+        } else {
+          computedStreak = 0;
+        }
+
+        // Usar o maior entre local (já calculado) e remoto recalculado
+        S.streak           = Math.max(S.streak || 0, computedStreak);
+        S.bestStreak       = Math.max(S.bestStreak || 0, remoteBest);
+        S.lastActivityDate = remoteLastActivity || S.lastActivityDate || '';
+        S.lastDay          = S.lastActivityDate;
       }
       const{data:ps}=await _supa.from('product_stats').select('*').eq('user_id',currentUser.id);
       if(ps) ps.forEach(r=>{S.stats[r.product_id]={seen:r.seen,cor:r.correct,wr:r.wrong,lvl:r.lvl,nextRev:r.next_rev};});
-      const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(30);
-      if(hist) S.history=hist.map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
-      _remoteLoaded = true; // dados remotos carregados com sucesso
-      console.log('[loadRemoteState] OK — xp:', S.xp, 'sessions:', S.totalSessions);
+      const{data:hist}=await _supa.from('sessions').select('*').eq('user_id',currentUser.id).order('played_at',{ascending:false}).limit(200);
+      if(hist) S.history=hist.slice(0,30).map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
+
+      // Calcular streak diretamente das sessions (fonte da verdade no banco)
+      // Nao depende de last_activity_date existir como coluna
+      if (hist && hist.length > 0) {
+        const uniqueDays = [...new Set(hist.map(h => {
+          // played_at vem como UTC do Supabase; getFullYear/Month/Date usam hora local — correto
+          const raw = h.played_at;
+          const d = raw && !raw.endsWith('Z') && !raw.includes('+') ? new Date(raw + 'Z') : new Date(raw);
+          return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        }))].sort().reverse();
+
+        const today = isoToday();
+        let sessionStreak = 0;
+        let expected = today;
+
+        for (const day of uniqueDays) {
+          if (day === expected) {
+            sessionStreak++;
+            const [y,m,d] = expected.split('-').map(Number);
+            const prev = new Date(y, m-1, d-1);
+            expected = prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0')+'-'+String(prev.getDate()).padStart(2,'0');
+          } else if (day < expected) {
+            break;
+          }
+        }
+
+        // Sessions são a fonte da verdade — não usar streak do profiles como fallback
+        S.streak = sessionStreak;
+
+        // Calcular melhor streak historico: maior sequencia consecutiva nos dias unicos
+        let bestFromSessions = 0;
+        let runLen = 1;
+        for (let i = 0; i < uniqueDays.length - 1; i++) {
+          const diff = daysBetween(uniqueDays[i+1], uniqueDays[i]); // uniqueDays ja esta ordenado desc
+          if (diff === 1) { runLen++; } else { runLen = 1; }
+          if (runLen > bestFromSessions) bestFromSessions = runLen;
+        }
+        if (uniqueDays.length > 0 && bestFromSessions === 0) bestFromSessions = 1;
+        S.bestStreak = bestFromSessions;
+        if (uniqueDays.length > 0) {
+          S.lastActivityDate = uniqueDays[0];
+          S.lastDay = S.lastActivityDate;
+        }
+        console.log('[loadRemoteState] Streak das sessions:', sessionStreak, '| dias:', uniqueDays.slice(0,7));
+      } else {
+        S.streak = Math.max(S.streak || 0, computedStreak);
+        S.bestStreak = Math.max(S.bestStreak || 0, remoteBest);
+        S.lastActivityDate = remoteLastActivity || S.lastActivityDate || '';
+        S.lastDay = S.lastActivityDate;
+      }
+
+      _remoteLoaded = true;
+      console.log('[loadRemoteState] OK xp:', S.xp, 'streak:', S.streak, 'lastActivity:', S.lastActivityDate);
     } catch(e){ console.error('loadRemoteState:', e); }
   };
   await Promise.race([fetch(), timeout]);
@@ -1122,13 +1223,11 @@ async function syncProfile() {
   if(!currentUser) return;
   // PROTEÇÃO CRÍTICA: nunca salvar antes de confirmar dados remotos
   // Evita sobrescrever servidor com zeros quando abre em novo dispositivo
+  // IMPORTANTE: NÃO chamar loadRemoteState() aqui — causaria sobrescrita do streak
+  // que acabou de ser calculado em updateStreakOnGameComplete()
   if(!_remoteLoaded) {
-    console.warn('[syncProfile] Bloqueado — dados remotos ainda não confirmados. Tentando carregar primeiro...');
-    await loadRemoteState();
-    if(!_remoteLoaded) {
-      console.error('[syncProfile] Abortado — não foi possível confirmar dados remotos.');
-      return;
-    }
+    console.warn('[syncProfile] Bloqueado — dados remotos ainda não confirmados. Aguardando próximo ciclo.');
+    return;
   }
   try {
     const uname = currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '';
@@ -1141,7 +1240,8 @@ async function syncProfile() {
       xp:             S.xp,
       streak:         S.streak,
       best_streak:    S.bestStreak    || 0,
-      last_day:       S.lastDay,
+      last_day:       S.lastActivityDate || S.lastDay || '',
+      last_activity_date: S.lastActivityDate || '',
       achievements:   S.achievements,
       mastered_count: mastered,
       total_sessions: S.totalSessions || 0,
@@ -1196,7 +1296,7 @@ const ACHS = [
 const LEVELS = [0,100,250,500,1000,2000,4000,8000,15000,30000];
 
 let S = {
-  xp:0, streak:0, bestStreak:0, lastDay:'',
+  xp:0, streak:0, bestStreak:0, lastDay:'', lastActivityDate:'',
   achievements:[], stats:{}, history:[],
   totalSessions:0, totalAnswers:0,
   rankings:[]
@@ -1208,18 +1308,56 @@ let G = {
 };
 
 function save() {
+  // Só salva localmente durante o jogo — syncProfile() é chamado por saveRound()
+  // após updateStreakOnGameComplete(), garantindo que o streak correto vai ao banco.
   try { localStorage.setItem('alu_state', JSON.stringify(S)); } catch(e){}
-  syncProfile();
 }
 function isoToday() {
-  return new Date().toISOString().slice(0, 10); // "2026-06-11"
+  // Use local date (not UTC) to avoid timezone issues (e.g. Brazil UTC-3)
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`; // "2026-06-11" in local time
 }
 
 function daysBetween(a, b) {
-  // Compare only YYYY-MM-DD strings, no time component
-  const da = new Date(a + 'T00:00:00Z');
-  const db = new Date(b + 'T00:00:00Z');
+  // Compare only YYYY-MM-DD strings using local midnight to avoid DST/timezone drift
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  const da = new Date(ay, am - 1, ad);
+  const db = new Date(by, bm - 1, bd);
   return Math.round((db - da) / 86400000);
+}
+
+// ── STREAK: called ONLY when a game is completed ─────────────────────
+function updateStreakOnGameComplete() {
+  const today = isoToday();
+  const last  = S.lastActivityDate || '';
+
+  if (!last) {
+    // First ever activity
+    S.streak = 1;
+  } else if (last === today) {
+    // Already played today — do not change streak
+  } else {
+    const diff = daysBetween(last, today);
+    if (diff === 1) {
+      // Played yesterday → extend streak
+      S.streak = (S.streak || 0) + 1;
+    } else {
+      // Gap > 1 day → reset to 1
+      S.streak = 1;
+    }
+  }
+
+  // Update best streak
+  if ((S.streak || 0) > (S.bestStreak || 0)) {
+    S.bestStreak = S.streak;
+  }
+
+  // Record today as last activity date
+  S.lastActivityDate = today;
 }
 
 function load() {
@@ -1248,24 +1386,21 @@ function load() {
   if (!Array.isArray(S.achievements)) S.achievements = [];
   if (!Array.isArray(S.history))      S.history = [];
   if (typeof S.stats !== 'object' || Array.isArray(S.stats)) S.stats = {};
+  if (typeof S.lastActivityDate !== 'string') S.lastActivityDate = '';
 
-  // Migrate old toDateString format to ISO
-  if (S.lastDay && S.lastDay.length > 10) {
-    try { S.lastDay = new Date(S.lastDay).toISOString().slice(0,10); } catch(e) { S.lastDay = ''; }
+  // Migrate lastActivityDate format (ISO only)
+  if (S.lastActivityDate && S.lastActivityDate.length > 10) {
+    try { S.lastActivityDate = new Date(S.lastActivityDate).toISOString().slice(0,10); } catch(e) { S.lastActivityDate = ''; }
   }
-  const today = isoToday();
-  if (S.lastDay && S.lastDay !== today) {
-    const diff = daysBetween(S.lastDay, today);
-    if (diff === 1) {
-      S.streak = (S.streak || 0) + 1;
-      if (S.streak > (S.bestStreak||0)) S.bestStreak = S.streak;
-    } else if (diff > 1) {
-      S.streak = 1;
-    }
-  } else if (!S.lastDay) {
-    S.streak = 1;
+  // Migrate legacy lastDay → lastActivityDate if not set yet
+  if (!S.lastActivityDate && S.lastDay) {
+    const ld = S.lastDay;
+    S.lastActivityDate = ld.length > 10
+      ? (function(){ try { return new Date(ld).toISOString().slice(0,10); } catch(e){ return ''; } })()
+      : ld;
   }
-  if (S.lastDay !== today) { S.lastDay = today; save(); }
+  // NOTE: streak is NOT updated here — it is updated only when a game is completed (updateStreakOnGameComplete).
+  // This prevents streak from incrementing just by opening the app.
 }
 
 // ── INIT ────────────────────────────────────────────────────────────
@@ -1873,6 +2008,8 @@ function saveRound() {
   if (!S.history) S.history = [];
   S.totalSessions = (S.totalSessions||0) + 1;
   S.totalAnswers  = (S.totalAnswers||0)  + G.cor + G.wr;
+  // Update streak based on consecutive days of activity
+  updateStreakOnGameComplete();
   // Atualiza XP com os pontos da rodada (caso não tenha sido somado via addXP)
   // addXP já foi chamado durante a rodada para cada acerto; aqui apenas garantimos save final
   const modeLabel = {quiz:'Foto→Nome', hunt:'Caça à Foto', flashcard:'Flashcard',
