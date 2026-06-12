@@ -1145,52 +1145,11 @@ async function loadRemoteState() {
       if(hist) S.history=hist.slice(0,30).map(h=>({mode:h.mode,cor:h.correct,wr:h.wrong,pts:h.score,ts:new Date(h.played_at).getTime()}));
 
       // Calcular streak diretamente das sessions (fonte da verdade no banco)
-      // Nao depende de last_activity_date existir como coluna
-      if (hist && hist.length > 0) {
-        const uniqueDays = [...new Set(hist.map(h => {
-          // played_at vem como UTC do Supabase; getFullYear/Month/Date usam hora local — correto
-          const raw = h.played_at;
-          const d = raw && !raw.endsWith('Z') && !raw.includes('+') ? new Date(raw + 'Z') : new Date(raw);
-          return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-        }))].sort().reverse();
-
-        const today = isoToday();
-        let sessionStreak = 0;
-        let expected = today;
-
-        for (const day of uniqueDays) {
-          if (day === expected) {
-            sessionStreak++;
-            const [y,m,d] = expected.split('-').map(Number);
-            const prev = new Date(y, m-1, d-1);
-            expected = prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0')+'-'+String(prev.getDate()).padStart(2,'0');
-          } else if (day < expected) {
-            break;
-          }
-        }
-
-        // Sessions são a fonte da verdade — não usar streak do profiles como fallback
-        S.streak = sessionStreak;
-
-        // Calcular melhor streak historico: maior sequencia consecutiva nos dias unicos
-        let bestFromSessions = 0;
-        let runLen = 1;
-        for (let i = 0; i < uniqueDays.length - 1; i++) {
-          const diff = daysBetween(uniqueDays[i+1], uniqueDays[i]); // uniqueDays ja esta ordenado desc
-          if (diff === 1) { runLen++; } else { runLen = 1; }
-          if (runLen > bestFromSessions) bestFromSessions = runLen;
-        }
-        if (uniqueDays.length > 0 && bestFromSessions === 0) bestFromSessions = 1;
-        S.bestStreak = bestFromSessions;
-        // Atualiza lastActivityDate com o dia mais recente para updateStreakOnGameComplete funcionar
-        if (uniqueDays.length > 0) S.lastActivityDate = uniqueDays[0];
-        console.log('[loadRemoteState] Streak das sessions:', sessionStreak, '| dias:', uniqueDays.slice(0,7));
-      } else {
-        // Sem sessions — zera streak
-        S.streak = 0;
-        S.bestStreak = 0;
-        S.lastActivityDate = '';
-      }
+      const sc = calcStreakFromHistRows(hist);
+      S.streak          = sc.streak;
+      S.bestStreak      = sc.bestStreak;
+      S.lastActivityDate = sc.lastDay;
+      console.log('[loadRemoteState] Streak das sessions:', sc.streak, '| lastDay:', sc.lastDay);
 
       _remoteLoaded = true;
       console.log('[loadRemoteState] OK xp:', S.xp, 'streak:', S.streak);
@@ -1341,6 +1300,42 @@ function daysBetween(a, b) {
   const da = new Date(ay, am - 1, ad);
   const db = new Date(by, bm - 1, bd);
   return Math.round((db - da) / 86400000);
+}
+
+// ── STREAK HELPERS ────────────────────────────────────────────────────
+// Calcula streak e bestStreak a partir de rows de sessions (cada row precisa de played_at)
+function calcStreakFromHistRows(hist) {
+  if (!hist || hist.length === 0) return { streak: 0, bestStreak: 0, lastDay: '' };
+
+  const uniqueDays = [...new Set(hist.map(h => {
+    const raw = h.played_at;
+    const d = raw && !raw.endsWith('Z') && !raw.includes('+') ? new Date(raw + 'Z') : new Date(raw);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }))].sort().reverse();
+
+  const today = isoToday();
+  let streak = 0;
+  let expected = today;
+  for (const day of uniqueDays) {
+    if (day === expected) {
+      streak++;
+      const [y,m,dd] = expected.split('-').map(Number);
+      const prev = new Date(y, m-1, dd-1);
+      expected = prev.getFullYear()+'-'+String(prev.getMonth()+1).padStart(2,'0')+'-'+String(prev.getDate()).padStart(2,'0');
+    } else if (day < expected) {
+      break;
+    }
+  }
+
+  let bestStreak = 0, runLen = 1;
+  for (let i = 0; i < uniqueDays.length - 1; i++) {
+    const diff = daysBetween(uniqueDays[i+1], uniqueDays[i]);
+    if (diff === 1) { runLen++; } else { runLen = 1; }
+    if (runLen > bestStreak) bestStreak = runLen;
+  }
+  if (uniqueDays.length > 0 && bestStreak === 0) bestStreak = 1;
+
+  return { streak, bestStreak, lastDay: uniqueDays[0] || '' };
 }
 
 // ── STREAK: called ONLY when a game is completed ─────────────────────
@@ -2105,14 +2100,12 @@ function switchTab(tab) {
 }
 
 // ── HISTORY SAVE ─────────────────────────────────────────────────────
-function saveRound() {
+async function saveRound() {
   if (!S.history) S.history = [];
   S.totalSessions = (S.totalSessions||0) + 1;
   S.totalAnswers  = (S.totalAnswers||0)  + G.cor + G.wr;
-  // Update streak based on consecutive days of activity
+  // Streak local (usado enquanto sessão ainda não está no banco)
   updateStreakOnGameComplete();
-  // Atualiza XP com os pontos da rodada (caso não tenha sido somado via addXP)
-  // addXP já foi chamado durante a rodada para cada acerto; aqui apenas garantimos save final
   const modeLabel = {quiz:'Foto→Nome', hunt:'Caça à Foto', flashcard:'Flashcard',
     type:'Digitação', survival:'Sobrevivência', battle:'60 Segundos', review:'Revisão',
     silhouette:'Silhueta', countdown:'Contagem', connect:'Conecta',
@@ -2124,8 +2117,32 @@ function saveRound() {
   S.history = S.history.slice(0, 30);
   console.log('[saveRound] Encerrando rodada:', { mode: modeLabel, cor: G.cor, wr: G.wr, pts: G.score, totalSessions: S.totalSessions, totalAnswers: S.totalAnswers, xp: S.xp });
   try { localStorage.setItem('alu_state', JSON.stringify(S)); } catch(e){}
-  syncProfile(); // garante persistência imediata com todos os campos atualizados
-  syncSession(S.history[0]);
+
+  // 1) Salva a sessão no banco PRIMEIRO
+  await syncSession(S.history[0]);
+
+  // 2) Recalcula streak a partir das sessions já commitadas (fonte da verdade)
+  if (currentUser && _remoteLoaded) {
+    try {
+      const { data: freshHist } = await _supa
+        .from('sessions')
+        .select('played_at')
+        .eq('user_id', currentUser.id)
+        .order('played_at', { ascending: false })
+        .limit(200);
+      const sc = calcStreakFromHistRows(freshHist);
+      S.streak           = sc.streak;
+      S.bestStreak       = Math.max(S.bestStreak || 0, sc.bestStreak);
+      S.lastActivityDate = sc.lastDay;
+      console.log('[saveRound] Streak recalculado das sessions:', S.streak);
+      try { localStorage.setItem('alu_state', JSON.stringify(S)); } catch(e){}
+    } catch(e) {
+      console.warn('[saveRound] Falha ao recalcular streak das sessions — usando valor local:', e);
+    }
+  }
+
+  // 3) Salva perfil com streak correto
+  syncProfile();
 }
 
 // ── INDICADORES ───────────────────────────────────────────────────────
