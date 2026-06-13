@@ -1757,6 +1757,7 @@ async function loadRemoteState() {
         S.ownedTitles   = prof.owned_titles    || [];
         S.activeTitle   = prof.active_title    || '';
         S.inventory     = prof.inventory       || {};
+        S.titleLastDay  = prof.title_last_day  || '';
         // Escudos: restaura do banco se o mês bater
         if (prof.shields_month && prof.shields_month === isoMonth()) {
           S.shields      = prof.shields      || 0;
@@ -1836,7 +1837,8 @@ async function syncProfile() {
       coins:           S.coins         || 0,
       owned_titles:    S.ownedTitles   || [],
       active_title:    S.activeTitle   || '',
-      inventory:       S.inventory     || {}
+      inventory:       S.inventory     || {},
+      title_last_day:  S.titleLastDay  || ''
     });
     if (error) {
       console.error('[syncProfile] Erro ao salvar perfil:', error);
@@ -2070,6 +2072,38 @@ function refreshShieldsIfNewMonth() {
     save();
     console.log('[shields] Novo mês — escudos recarregados:', S.shields, 'para nível', lv);
   }
+}
+
+// ── RECOMPENSA DIÁRIA DE TÍTULO ───────────────────────────────────────
+function refreshTitleDailyRewards() {
+  const today = isoToday();
+  if (!S.activeTitle) return;
+  if (S.titleLastDay === today) return; // já recebeu hoje
+
+  // Descobre qual título está equipado pelo activeTitle (texto)
+  const equipped = STORE_TITLES.find(t =>
+    S.activeTitle.includes(t.name) || S.activeTitle.includes(t.ico)
+  );
+  if (!equipped || !equipped.daily) return;
+
+  // Distribui os itens diários
+  const daily = equipped.daily;
+  const msgs = [];
+  Object.entries(daily).forEach(([item, qty]) => {
+    S.inventory[item] = (S.inventory[item] || 0) + qty;
+    const labels = { skip_q:'Pular Questão', elim2:'Eliminar 2', second_chance:'2ª Chance' };
+    msgs.push(`+${qty} ${labels[item]||item}`);
+  });
+
+  S.titleLastDay = today;
+  save();
+  syncProfile();
+
+  // Toast com os itens recebidos
+  setTimeout(() => {
+    toast(`${equipped.ico} ${equipped.name}: ${msgs.join(' · ')} hoje!`);
+  }, 1200);
+  console.log('[title] Recompensa diária distribuída:', daily);
 }let S = {
   xp:0, streak:0, bestStreak:0, lastActivityDate:'',
   achievements:[], achievementDates:{}, stats:{}, history:[],
@@ -2079,7 +2113,8 @@ function refreshShieldsIfNewMonth() {
   coins:0,
   ownedTitles:[],
   activeTitle:'',
-  inventory:{}
+  inventory:{},
+  titleLastDay:''
 };
 let G = {
   mode:null, score:0, cor:0, wr:0, cur:0, total:10,
@@ -2210,6 +2245,7 @@ function load() {
   if (!Array.isArray(S.ownedTitles))  S.ownedTitles  = [];
   if (typeof S.activeTitle !== 'string') S.activeTitle = '';
   if (typeof S.inventory !== 'object' || Array.isArray(S.inventory)) S.inventory = {};
+  if (typeof S.titleLastDay !== 'string') S.titleLastDay = '';
   if (!Array.isArray(S.achievements)) S.achievements = [];
   if (typeof S.achievementDates !== 'object' || Array.isArray(S.achievementDates)) S.achievementDates = {};
   if (!Array.isArray(S.history))      S.history = [];
@@ -2222,6 +2258,7 @@ function load() {
 function init() {
   load();
   refreshShieldsIfNewMonth();
+  refreshTitleDailyRewards();
   updateHomeUI();
   document.getElementById('prodCount').textContent = P.length + ' produtos';
 }
@@ -2600,12 +2637,12 @@ const STORE_PROGRESSION = [
   { id:'turbo_review',  ico:'🎯', name:'Revisão Turbo',     desc:'Inicia sessão com seus 10 produtos mais errados.', cost:60, type:'single_use' },
 ];
 const STORE_TITLES = [
-  { id:'title_star',    ico:'⭐', name:'Estrela',    cost:80 },
-  { id:'title_mvp',     ico:'🏆', name:'MVP',        cost:150 },
-  { id:'title_phenom',  ico:'🔥', name:'Fenômeno',   cost:300 },
-  { id:'title_diamond', ico:'💎', name:'Diamante',   cost:500 },
-  { id:'title_legend',  ico:'👑', name:'Lenda',      cost:700 },
-  { id:'title_goat',    ico:'🐐', name:'G.O.A.T.',   cost:900 },
+  { id:'title_star',    ico:'⭐', name:'Estrela',    cost:80,  daily:{ skip_q:1 } },
+  { id:'title_mvp',     ico:'🏆', name:'MVP',        cost:150, daily:{ skip_q:2 } },
+  { id:'title_phenom',  ico:'🔥', name:'Fenômeno',   cost:300, daily:{ skip_q:2, elim2:1 } },
+  { id:'title_diamond', ico:'💎', name:'Diamante',   cost:500, daily:{ skip_q:3, elim2:2 } },
+  { id:'title_legend',  ico:'👑', name:'Lenda',      cost:700, daily:{ skip_q:3, elim2:2, second_chance:1 } },
+  { id:'title_goat',    ico:'🐐', name:'G.O.A.T.',   cost:900, daily:{ skip_q:5, elim2:3, second_chance:2 } },
 ];
 
 function renderStore() {
@@ -2655,9 +2692,10 @@ function renderStore() {
   // Títulos
   const tEl = document.getElementById('storeTitles');
   if (tEl) {
+    const itemLabels = { skip_q:'⏩ Pular', elim2:'💡 Eliminar', second_chance:'🔁 2ª Chance' };
     tEl.innerHTML = STORE_TITLES.map(item => {
       const owned  = (S.ownedTitles||[]).includes(item.id);
-      const active = S.activeTitle === item.id;
+      const active = S.activeTitle && S.activeTitle.includes(item.name);
       const canBuy = coins >= item.cost;
       let btnClass = 'store-btn';
       let btnLabel = '🪙 ' + item.cost;
@@ -2665,11 +2703,16 @@ function renderStore() {
       if (owned && active) { btnClass += ' active-title'; btnLabel = '✓ Ativo'; btnDisabled = 'disabled'; }
       else if (owned)      { btnLabel = 'Equipar'; }
       else if (!canBuy)    { btnDisabled = 'disabled'; }
+      // Descrição dos benefícios diários
+      const dailyDesc = item.daily
+        ? Object.entries(item.daily).map(([k,v]) => `+${v} ${itemLabels[k]||k}`).join(' · ')
+        : '—';
       return `<div class="store-item">
         <div class="store-item-ico">${item.ico}</div>
         <div class="store-item-info">
           <div class="store-item-name">${item.ico} ${item.name}</div>
-          <div class="store-item-desc">Título de prestígio exibido no ranking</div>
+          <div class="store-item-desc" style="color:var(--green);font-weight:600">Todo dia: ${dailyDesc}</div>
+          <div class="store-item-desc" style="margin-top:2px">Título exibido no ranking</div>
         </div>
         <button class="${btnClass}" ${btnDisabled} onclick="buyTitle('${item.id}')">
           ${btnLabel}
