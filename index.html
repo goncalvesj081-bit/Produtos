@@ -2557,7 +2557,10 @@ function startMode(mode) {
     G.queue = shuffle([...P]).slice(0, 15);
     G.total = G.queue.length;
     show('acumulo');
-    renderAcumulo();
+    if (!_mTutDone.has('acumulo')) {
+      _mTutOnClose = () => renderAcumulo();
+      modoTutCheck('acumulo');
+    } else { renderAcumulo(); }
     return;
   }
   if (mode === 'random') {
