@@ -939,6 +939,7 @@ input{font-family:inherit;}
 
   <div class="mode-section">
     <div class="section-label">Modos de treino</div>
+    <div class="mode-tile" onclick="startTreinamento()"><div class="tile-ico">📖</div><div class="tile-name">Treinamento</div><div class="tile-desc">Aprenda antes de jogar</div></div>
     <div class="mode-tile" data-mode="quiz"       onclick="startMode('quiz')"><div class="tile-ico">🖼</div><div class="tile-name">Foto → Nome</div><div class="tile-desc">4 opções</div></div>
     <div class="mode-tile" data-mode="type"       onclick="startMode('type')"><div class="tile-ico">⌨️</div><div class="tile-name">Digite</div><div class="tile-desc">Escreva o nome</div></div>
     <div class="mode-tile" data-mode="flashcard"  onclick="startMode('flashcard')"><div class="tile-ico">🧠</div><div class="tile-name">Flashcard</div><div class="tile-desc">Vire o card</div></div>
@@ -952,9 +953,9 @@ input{font-family:inherit;}
     <div class="mode-tile" data-mode="parperfeit" onclick="startMode('parperfeit')"><div class="tile-ico">🃏</div><div class="tile-name">Par Perfeito</div><div class="tile-desc">Memory</div></div>
     <div class="mode-tile" data-mode="sequence"   onclick="startMode('sequence')"><div class="tile-ico">🔢</div><div class="tile-name">Sequência</div><div class="tile-desc">Memorize 3</div></div>
     <div class="mode-tile" data-mode="duel"       onclick="startMode('duel')"><div class="tile-ico">🎰</div><div class="tile-name">Dupla ou Nada</div><div class="tile-desc">Acumule ou perca tudo</div></div>
+    <div class="mode-tile" data-mode="acumulo"    onclick="startMode('acumulo')"><div class="tile-ico">💰</div><div class="tile-name">Acúmulo</div><div class="tile-desc">4 opções, perde tudo</div></div>
     <div class="mode-tile" data-mode="random"     onclick="startMode('random')"><div class="tile-ico">🎲</div><div class="tile-name">Aleatório</div><div class="tile-desc">Todos os modos</div></div>
     <div class="mode-tile" id="tile-dominados" onclick="startDominados()"><div class="tile-ico">🏅</div><div class="tile-name">Dominados</div><div class="tile-desc">Só o que você domina</div></div>
-    <div class="mode-tile" onclick="startTreinamento()"><div class="tile-ico">📖</div><div class="tile-name">Treinamento</div><div class="tile-desc">Aprenda antes de jogar</div></div>
   </div>
 
   </div><!-- end mode-grid-2col -->
@@ -1394,6 +1395,23 @@ input{font-family:inherit;}
   <div id="duel-content" style="flex:1;display:flex;flex-direction:column;padding:12px 14px 80px;gap:10px;overflow-y:auto"></div>
 </div>
 
+
+<!-- ══════════════════════════════════════
+     ACÚMULO (versão fácil do Dupla ou Nada)
+══════════════════════════════════════ -->
+<div class="page" id="acumulo">
+  <div class="g-bar">
+    <button class="g-back" onclick="goHome()">← Voltar</button>
+    <span class="g-mode">💰 Acúmulo</span>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('acumulo')">?</button><div class="g-score" id="acScore">0 pts</div></div>
+  </div>
+  <div class="g-progress">
+    <div class="g-prog-row"><span class="g-prog-txt" id="acProg">1 / 10</span></div>
+    <div class="g-track"><div class="g-fill" id="acFill" style="width:10%"></div></div>
+  </div>
+  <div id="acumulo-content" style="flex:1;display:flex;flex-direction:column;padding:12px 14px 80px;gap:10px;overflow-y:auto"></div>
+</div>
+
 <!-- ══════════════════════════════════════
      ALEATÓRIO
 ══════════════════════════════════════ -->
@@ -1478,7 +1496,7 @@ function navTo(id) {
   if (id === 'adminPage' && !currentUser?.is_admin) return;
 
   // Fechar qualquer página de jogo aberta
-  ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result'].forEach(gid=>{
+  ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','acumulo','random','result'].forEach(gid=>{
     const el=document.getElementById(gid);
     if(el){el.classList.remove('on');el.style.display='none';}
   });
@@ -1537,8 +1555,10 @@ function showApp() {
 function goHome() {
   clearInterval(G.timer);
   clearInterval(cdTimer);
+  if (acTimer) { clearInterval(acTimer); acTimer = null; }
+  acAnswered = true;
   // hide all game pages
-  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result','dominados','treinamento'];
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','acumulo','random','result','dominados','treinamento'];
   gamePages.forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.classList.remove('on'); el.style.display = 'none'; }
@@ -2258,7 +2278,7 @@ function show(id) {
   const el = document.getElementById(id);
   if (el) { el.classList.add('on'); el.style.display = 'flex'; }
   // hide sidebar/bottomnav for game pages
-  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','random','result','dominados','treinamento'];
+  const gamePages = ['quiz','flashcard','typing','hunt','silhouette','countdown','connect','parperfeit','sequence','duel','acumulo','random','result','dominados','treinamento'];
   const isGame = gamePages.includes(id);
   const sb = document.getElementById('appSidebar');
   const bn = document.getElementById('appBottomNav');
@@ -2444,6 +2464,8 @@ function toast(msg) {
 // ── START MODE ────────────────────────────────────────────────────────
 function startMode(mode) {
   clearInterval(G.timer);
+  if (acTimer) { clearInterval(acTimer); acTimer = null; }
+  acAnswered = false;
   G = { mode, score:0, cor:0, wr:0, cur:0, total:10,
         lives:3, combo:0, queue:[], answered:false,
         timer:null, timerVal:60 };
@@ -2528,6 +2550,15 @@ function startMode(mode) {
     duelState = { bank: 0, streak: 0, multiplier: 1 };
     G.queue = buildQueue(10, false); G.total = G.queue.length;
     show('duel'); modoTutCheck('duel'); renderDuel(); return;
+  }
+
+  if (mode === 'acumulo') {
+    acState = { bank:0, streak:0, multiplier:1 };
+    G.queue = shuffle([...P]).slice(0, 15);
+    G.total = G.queue.length;
+    show('acumulo');
+    renderAcumulo();
+    return;
   }
   if (mode === 'random') {
     G.queue = buildQueue(15, false); G.total = 15;
@@ -2906,7 +2937,7 @@ async function saveRound() {
     type:'Digitação', survival:'Sobrevivência', battle:'60 Segundos', review:'Revisão',
     silhouette:'Silhueta', countdown:'Contagem', connect:'Conecta',
     parperfeit:'Par Perfeito', sequence:'Sequência',
-    duel:'Dupla ou Nada', random:'Aleatório'}[G.mode] || G.mode;
+    duel:'Dupla ou Nada', acumulo:'Acúmulo', random:'Aleatório'}[G.mode] || G.mode;
   S.history.unshift({
     mode: modeLabel, cor: G.cor, wr: G.wr,
     pts: G.score, ts: Date.now()
@@ -4189,72 +4220,53 @@ function renderDuel() {
   if (G.cur >= G.queue.length) { endGame(); return; }
   const p = G.queue[G.cur];
 
-  // Atualizar header
   document.getElementById('duelProg').textContent  = (G.cur+1) + ' / ' + G.total;
   document.getElementById('duelFill').style.width  = ((G.cur+1)/G.total*100) + '%';
   document.getElementById('duelScore').textContent = G.score + ' pts';
 
-  const mult = duelState.multiplier;
-  const bank = duelState.bank;
+  const mult   = duelState.multiplier;
+  const bank   = duelState.bank;
   const streak = duelState.streak;
+
+  const opts = shuffle([p, ...shuffle(P.filter(x=>x.id!==p.id)).slice(0,3)]);
 
   const c = document.getElementById('duel-content');
   c.innerHTML = `
     <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex-shrink:0">
-      <img src="${p.img}" style="width:100%;height:200px;object-fit:contain;padding:14px;background:#fff;display:block">
+      <img src="${p.img}" style="width:100%;height:180px;object-fit:contain;padding:14px;background:#fff;display:block">
     </div>
+    <div style="text-align:center;font:700 .75rem 'Inter',sans-serif;color:var(--text2)">Qual o nome deste produto?</div>
     ${streak > 0 ? `
-    <div style="display:flex;justify-content:center;gap:8px">
+    <div style="display:flex;justify-content:center">
       <div style="background:var(--gold2);border:1px solid var(--gold);border-radius:var(--r);padding:6px 14px;text-align:center">
-        <div style="font:800 1.1rem 'JetBrains Mono',monospace;color:var(--gold)">${bank} pts</div>
-        <div style="font-size:.6rem;color:var(--text3)">em jogo · ×${mult} próx.</div>
+        <div style="font:800 1.1rem 'JetBrains Mono',monospace;color:var(--gold)">${bank} pts em jogo</div>
+        <div style="font-size:.6rem;color:var(--text3)">×${mult} no próximo · errar = perde tudo</div>
       </div>
     </div>` : `
     <div style="text-align:center;font-size:.68rem;color:var(--text3)">Acerte para acumular · Erre e perde tudo!</div>`}
-    <div style="display:flex;gap:8px">
-      <input id="duelInp" class="type-inp" placeholder="Nome do produto..." autocomplete="off"
-        oninput="duelCheckSim()" onkeydown="if(event.key==='Enter')duelSubmit()">
-      <button class="type-go" onclick="duelSubmit()">→</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${opts.map(o=>`
+        <button onclick="duelResolveOpt(${o.id===p.id})"
+          style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+                 padding:10px 8px;font:600 .78rem 'Inter',sans-serif;color:var(--text);
+                 text-align:center;cursor:pointer;transition:background .1s">
+          ${o.name}
+        </button>`).join('')}
     </div>
-    <div id="duelSim" style="font-size:.68rem;color:var(--text3);min-height:18px;text-align:center"></div>
-    <button onclick="duelSkip()" style="background:none;border:1px solid var(--line);border-radius:var(--r);
-      padding:8px;font-size:.72rem;color:var(--text3);width:100%">Pular (perde acúmulo)</button>
   `;
-  document.getElementById('duelInp')?.focus();
 }
 
-function duelCheckSim() {
-  const inp = document.getElementById('duelInp');
-  const sim = document.getElementById('duelSim');
-  if (!inp || !sim) return;
-  const v = inp.value.trim().toLowerCase();
-  if (!v) { sim.textContent = ''; return; }
+function duelResolveOpt(ok) {
   const p = G.queue[G.cur];
-  const match = v.split(' ').filter(Boolean).every(w => p.name.toLowerCase().includes(w));
-  sim.textContent = match ? '✓ parece certo...' : '';
-  sim.style.color = 'var(--green)';
-}
-
-function duelSubmit() {
-  const inp = document.getElementById('duelInp');
-  if (!inp) return;
-  const val = inp.value.trim();
-  if (!val) return;
-  const p   = G.queue[G.cur];
-  const ok  = val.toLowerCase().split(' ').filter(Boolean)
-                 .every(w => p.name.toLowerCase().includes(w))
-              && val.length >= 3;
   duelResolve(ok, p);
-}
-
-function duelSkip() {
-  const p = G.queue[G.cur];
-  duelResolve(false, p, true);
 }
 
 function duelResolve(ok, p, skipped = false) {
   const BASE_PTS = 30;
   const c = document.getElementById('duel-content');
+
+  // Disable all option buttons immediately
+  c.querySelectorAll('button').forEach(b => b.disabled = true);
 
   if (ok) {
     const earned = BASE_PTS * duelState.multiplier;
@@ -4266,10 +4278,7 @@ function duelResolve(ok, p, skipped = false) {
     floatPts('+' + earned, 'var(--gold)');
     updateStat(p.id, true);
     checkAchs();
-
-    // flash verde
     c.style.background = 'rgba(34,197,94,.08)';
-    c.style.borderRadius = 'var(--r)';
     toast(`✓ +${earned} pts · ×${duelState.multiplier} próxima`);
     setTimeout(() => { c.style.background = ''; G.cur++; renderDuel(); }, 900);
   } else {
@@ -4279,17 +4288,133 @@ function duelResolve(ok, p, skipped = false) {
     duelState.multiplier = 1;
     G.wr++; G.combo = 0;
     updateStat(p.id, false);
-
     c.style.background = 'rgba(239,68,68,.08)';
-    c.style.borderRadius = 'var(--r)';
-    toast(skipped ? `Pulou — ${lost} pts perdidos` : `✗ Era: ${p.name} · ${lost} pts perdidos`);
-
-    // mostra resposta brevemente
-    c.innerHTML += `<div style="text-align:center;padding:8px;background:var(--red2);border-radius:var(--r);
-      font:700 .82rem 'Inter',sans-serif;color:var(--red)">${p.name}</div>`;
+    // Highlight correct button
+    c.querySelectorAll('button').forEach(b => {
+      if (b.textContent.trim() === p.name) b.style.background = 'rgba(34,197,94,.18)';
+    });
+    toast(`✗ Era: ${p.name} · ${lost} pts perdidos`);
     setTimeout(() => { c.style.background = ''; G.cur++; renderDuel(); }, 1400);
   }
   document.getElementById('duelScore').textContent = G.score + ' pts';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MODO ACÚMULO — igual ao Dupla ou Nada mas com 4 opções (foto) e
+// ao errar perde só METADE do acúmulo (não tudo). Multiplicador até ×4.
+// ══════════════════════════════════════════════════════════════════════
+let acState    = { bank:0, streak:0, multiplier:1 };
+let acTimer    = null;
+let acAnswered = false;
+
+function renderAcumulo() {
+  if (G.cur >= G.queue.length) { endGame(); return; }
+  const p = G.queue[G.cur];
+
+  // Reset timer state
+  if (acTimer) { clearInterval(acTimer); acTimer = null; }
+  acAnswered = false;
+
+  // Update header
+  document.getElementById('acProg').textContent  = (G.cur+1) + ' / ' + G.total;
+  document.getElementById('acFill').style.width  = ((G.cur+1)/G.total*100) + '%';
+  document.getElementById('acScore').textContent = G.score + ' pts';
+
+  const { multiplier: mult, bank, streak } = acState;
+  // Distractors same type as current product
+  const sameType = P.filter(x => x.id !== p.id && x.type === p.type);
+  const opts = shuffle([p, ...shuffle(sameType).slice(0,3)]);
+  const c    = document.getElementById('acumulo-content');
+
+  c.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+      <img src="${p.img}" style="width:100%;height:180px;object-fit:contain;padding:14px;background:#fff;display:block">
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px">
+      <div style="font:700 .75rem 'Inter',sans-serif;color:var(--text2)">Qual o nome deste produto?</div>
+      <div id="acTimerDisplay" style="font:800 1.2rem 'JetBrains Mono',monospace;color:var(--blue);min-width:18px;text-align:right">5</div>
+    </div>
+    <div style="height:4px;background:var(--bg3);border-radius:99px;overflow:hidden">
+      <div id="acTimerBar" style="height:100%;width:100%;background:var(--blue);border-radius:99px"></div>
+    </div>
+    ${streak > 0
+      ? `<div style="text-align:center;background:var(--gold2);border:1px solid var(--gold);border-radius:var(--r);padding:8px">
+           <div style="font:800 1rem 'JetBrains Mono',monospace;color:var(--gold)">${bank} pts acumulados</div>
+           <div style="font-size:.6rem;color:var(--text3)">×${mult} no próximo · errar = perde tudo</div>
+         </div>`
+      : `<div style="text-align:center;font-size:.68rem;color:var(--text3)">Acerte para acumular · Erre e perde tudo!</div>`}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="acOpts">
+      ${opts.map(o=>`
+        <button onclick="acResolve(${o.id===p.id ? 1 : 0})"
+          style="background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+                 padding:12px 8px;font:600 .78rem 'Inter',sans-serif;color:var(--text);cursor:pointer">
+          ${o.name}
+        </button>`).join('')}
+    </div>
+  `;
+
+  // Animate timer bar and count down
+  let timeLeft = 5;
+  requestAnimationFrame(() => {
+    const bar = document.getElementById('acTimerBar');
+    if (bar) {
+      bar.style.transition = 'none';
+      bar.style.width = '100%';
+      requestAnimationFrame(() => {
+        bar.style.transition = 'width 5s linear';
+        bar.style.width = '0%';
+      });
+    }
+    acTimer = setInterval(() => {
+      timeLeft--;
+      const disp = document.getElementById('acTimerDisplay');
+      if (disp) { disp.textContent = timeLeft; if (timeLeft <= 2) disp.style.color = 'var(--red)'; }
+      if (timeLeft <= 0) { clearInterval(acTimer); acTimer = null; if (!acAnswered) acResolve(0); }
+    }, 1000);
+  });
+}
+
+function acResolve(ok) {
+  if (acAnswered) return;
+  acAnswered = true;
+  if (acTimer) { clearInterval(acTimer); acTimer = null; }
+
+  const BASE = 20;
+  const p = G.queue[G.cur];
+  const c = document.getElementById('acumulo-content');
+  if (c) c.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  if (ok) {
+    const earned = BASE * acState.multiplier;
+    acState.bank       += earned;
+    acState.streak     += 1;
+    acState.multiplier  = Math.min(8, acState.multiplier * 2);
+    G.score += earned; G.cor++; G.combo++;
+    addXP(earned);
+    floatPts('+' + earned, 'var(--gold)');
+    updateStat(p.id, true);
+    checkAchs();
+    if (c) c.style.background = 'rgba(34,197,94,.08)';
+    toast(`✓ +${earned} pts · ×${acState.multiplier} próxima`);
+    setTimeout(() => { if (c) c.style.background = ''; G.cur++; renderAcumulo(); }, 800);
+  } else {
+    const lost = acState.bank;
+    acState.bank       = 0;
+    acState.streak     = 0;
+    acState.multiplier = 1;
+    G.wr++; G.combo = 0;
+    updateStat(p.id, false);
+    if (c) {
+      c.style.background = 'rgba(239,68,68,.08)';
+      c.querySelectorAll('button').forEach(b => {
+        if (b.textContent.trim() === p.name) b.style.background = 'rgba(34,197,94,.2)';
+      });
+    }
+    const msg = ok === 0 && lost === 0 ? '⏱ Tempo! Sem acúmulo perdido' : `✗ Era: ${p.name}${lost > 0 ? ` · ${lost} pts perdidos` : ''}`;
+    toast(msg);
+    setTimeout(() => { if (c) c.style.background = ''; G.cur++; renderAcumulo(); }, 1500);
+  }
+  document.getElementById('acScore').textContent = G.score + ' pts';
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -4977,6 +5102,9 @@ function _tutRender() {
   if (!step) { tutSkip(); return; }
   _tutClearHighlight();
 
+  // Executa ação do step antes de mostrar (ex: trocar aba)
+  if (step.onShow) step.onShow();
+
   document.getElementById('tutDots').innerHTML = steps.map((_,i) =>
     `<div style="width:${i===_tutStep?18:6}px;height:6px;border-radius:99px;background:${i===_tutStep?'var(--blue)':'var(--bg4)'};transition:all .2s"></div>`
   ).join('');
@@ -5142,6 +5270,11 @@ const MODO_TUT_STEPS = {
     { icon:'💥', title:'Cuidado!', body:'Um único erro e você perde tudo que acumulou naquela sequência.' },
     { icon:'🔥', title:'Estratégia', body:'Quanto mais acertos seguidos, mais arriscado fica. O multiplicador pode chegar a ×8!' },
   ],
+  acumulo: [
+    { icon:'💰', title:'Acúmulo', body:'Mesma adrenalina do Dupla ou Nada — mas com 4 opções de nome em vez de digitar.' },
+    { icon:'×2×4×8', title:'Multiplicador até ×8', body:'Cada acerto dobra o multiplicador: ×1 → ×2 → ×4 → ×8. Quanto mais acertar seguido, mais pontos.' },
+    { icon:'💥', title:'Cuidado!', body:'Um único erro e você perde tudo que acumulou. Mesma punição do Dupla ou Nada!' },
+  ],
   random: [
     { icon:'🎲', title:'Aleatório', body:'A cada pergunta, o formato sorteia: pode ser quiz de 4 opções, digitação ou caça à foto.' },
     { icon:'🌀', title:'Surpresa', body:'Você não sabe o que vem a seguir. Esteja preparado para qualquer formato!' },
@@ -5166,10 +5299,12 @@ const MODO_TUT_STEPS = {
     { icon:'🚀', title:'Pronto para começar!', body:'Jogue todo dia para manter sua sequência 🔥 e subir no ranking.' },
   ],
   ranking: [
-    { icon:'🏆', title:'Score Geral', body:'O ranking principal combina 4 indicadores: XP (35%), Taxa de acerto (35%), Streak (15%) e Produtos dominados (15%).', highlight:'#rankingList', highlightLabel:'↑ Lista do ranking' },
-    { icon:'⚡🏅🎯✅', title:'Abas de Ranking', body:'Alterne entre XP puro, Domínio, Score combinado ou Acertividade. Cada aba tem uma lógica diferente.', highlight:'#rankingTabs', highlightLabel:'↑ Selecione a aba aqui' },
-    { icon:'✅', title:'Ranking de Acerto', body:'No ranking de Acertividade há um mínimo de respostas para participar — evita que quem jogou pouco apareça no topo com 100%.', highlight:'#rankingTabs', highlightLabel:'↑ Aba Acerto' },
-    { icon:'📊', title:'Seus chips', body:'Nos cards do ranking você vê seus pontos em cada categoria: XP, Acerto, Streak e Dominados.', highlight:'#rankingList', highlightLabel:'↑ Seus dados em cada card' },
+    { icon:'🏆', title:'Aba Geral — Score Combinado', body:'Combina 4 indicadores: XP (35%), Acerto (35%), Streak (15%) e Dominados (15%). É o ranking mais completo.', highlight:'#rankingList', highlightLabel:'↑ Ranking Geral', onShow:()=>switchRankTab('geral') },
+    { icon:'⚡', title:'Aba XP', body:'Ranking por XP acumulado puro. Quem jogou mais e acertou mais tem mais XP. Sem fórmula — é direto.', highlight:'#rankingList', highlightLabel:'↑ Ranking por XP', onShow:()=>switchRankTab('xp') },
+    { icon:'🏅', title:'Aba Domínio', body:'Ranking por produtos dominados. Dominar = acertar o mesmo produto 3+ vezes seguidas. Reflete conhecimento real.', highlight:'#rankingList', highlightLabel:'↑ Ranking por Domínio', onShow:()=>switchRankTab('dom') },
+    { icon:'🎯', title:'Aba Score', body:'Score calculado: combina domínio e acerto de forma diferente do Geral. Bom para ver quem é mais consistente.', highlight:'#rankingList', highlightLabel:'↑ Ranking por Score', onShow:()=>switchRankTab('score') },
+    { icon:'✅', title:'Aba Acerto', body:'Percentual de acertos. Tem um mínimo de respostas para participar — evita que quem jogou pouco apareça com 100%.', highlight:'#rankingList', highlightLabel:'↑ Ranking por Acerto', onShow:()=>switchRankTab('acc') },
+    { icon:'🔢', title:'Abas de navegação', body:'Use essas abas para alternar entre os 5 rankings a qualquer momento.', highlight:'#rankingTabs', highlightLabel:'↑ Selecione a aba aqui' },
   ],
   indicadores: [
     { icon:'⚡🏅', title:'XP e Nível', body:'O XP acumula com cada acerto em qualquer modo. O Nível sobe conforme você domina mais produtos — não é por XP puro.', highlight:'#indStatsGrid', highlightLabel:'↑ XP e Nível' },
@@ -5356,7 +5491,10 @@ initTutorial();
 
 // Auto-recuperação: se após 8s nenhuma página estiver visível, limpa localStorage e recarrega
 setTimeout(() => {
-  const anyVisible = ['home','rankingPage','indicatorsPage','adminPage','login'].some(id => {
+  const allPages = ['home','rankingPage','indicatorsPage','adminPage','login',
+    'quiz','flashcard','typing','hunt','silhouette','countdown','connect',
+    'parperfeit','sequence','duel','acumulo','random','result','dominados','treinamento'];
+  const anyVisible = allPages.some(id => {
     const el = document.getElementById(id);
     return el && el.classList.contains('on');
   });
