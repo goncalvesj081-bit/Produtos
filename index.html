@@ -4311,6 +4311,7 @@ let acTimer    = null;
 let acAnswered = false;
 
 function renderAcumulo() {
+  if (!document.getElementById('acumulo')?.classList.contains('on')) return;
   if (G.cur >= G.queue.length) { endGame(); return; }
   const p = G.queue[G.cur];
 
@@ -4379,6 +4380,7 @@ function renderAcumulo() {
 
 function acResolve(ok) {
   if (acAnswered) return;
+  if (!document.getElementById('acumulo')?.classList.contains('on')) return;
   acAnswered = true;
   if (acTimer) { clearInterval(acTimer); acTimer = null; }
 
