@@ -759,8 +759,18 @@ input{font-family:inherit;}
 .trei-phase-aprender{background:var(--gold2);color:var(--gold);border:1px solid var(--gold);}
 .trei-phase-testar{background:var(--blue2);color:var(--blue);border:1px solid var(--blue);}
 /* ── TUTORIAL ── */
-.tut-highlight-el{outline:3px solid var(--blue) !important;outline-offset:4px !important;border-radius:10px !important;animation:tutPulse 1.2s ease-in-out infinite;position:relative;z-index:8999;}
-@keyframes tutPulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}50%{box-shadow:0 0 0 8px rgba(59,130,246,0)}}
+.tut-highlight-el{
+  position:relative !important;
+  z-index:9002 !important;
+  border-radius:10px !important;
+  outline: 3px solid var(--blue) !important;
+  outline-offset: 3px !important;
+  animation:tutPulse 1.4s ease-in-out infinite !important;
+}
+@keyframes tutPulse{
+  0%,100%{ outline-color: var(--blue); }
+  50%{ outline-color: rgba(59,130,246,.4); }
+}
 
 /* ── BOTÃO TUTORIAL DE MODO ── */
 .g-help-btn {
@@ -781,8 +791,12 @@ input{font-family:inherit;}
 
 <!-- ══ TOAST ══ -->
 <div id="toast"></div>
-<div id="tutOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9000;pointer-events:all"></div>
-<div id="tutBox" style="display:none;position:fixed;z-index:9001;background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:20px 18px 16px;width:min(320px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.6);flex-direction:column;gap:12px">
+<svg id="tutSvgOverlay" style="display:none;position:fixed;inset:0;width:100%;height:100%;z-index:9001;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
+  <defs><clipPath id="tutHole"><path id="tutHolePath"/></clipPath></defs>
+  <rect width="100%" height="100%" fill="rgba(0,0,0,0.75)" clip-path="url(#tutHole)"/>
+</svg>
+<div id="tutOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;pointer-events:all"></div>
+<div id="tutBox" style="display:none;position:fixed;z-index:9003;background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:20px 18px 16px;width:min(320px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.6);flex-direction:column;gap:12px">
   <div style="display:flex;align-items:center;justify-content:space-between">
   <div id="tutDots" style="display:flex;gap:5px"></div>
   <button onclick="_mTutClose()" style="background:none;border:none;color:var(--text3);font-size:1.1rem;line-height:1;padding:2px 4px;cursor:pointer">✕</button>
@@ -816,7 +830,7 @@ input{font-family:inherit;}
     <div class="sidebar-label">Treino</div>
     <button class="sidebar-item active" id="sb-home" onclick="navTo('home')"><span class="ico">🎮</span> Modos</button>
     <button class="sidebar-item" id="sb-rank" onclick="navTo('rankingPage')"><span class="ico">🏆</span> Ranking</button>
-    <button class="sidebar-item" id="sb-ind"  onclick="navTo('indicatorsPage')"><span class="ico">📊</span> Indicadores</button>
+    <button class="sidebar-item" id="sb-ind"  onclick="navTo('indicatorsPage')"><span class="ico">📊</span> Estatísticas</button>
     <button class="sidebar-item" id="sb-admin" onclick="navTo('adminPage')" style="display:none"><span class="ico">👑</span> Administração</button>
   </div>
   <div class="sidebar-user">
@@ -863,6 +877,8 @@ input{font-family:inherit;}
 
   <!-- TAB: INÍCIO -->
   <div id="tab-inicio">
+
+
   <div class="home-brand">
     <div>
       <div class="brand-name">Alumi<span>nas</span></div>
@@ -881,13 +897,25 @@ input{font-family:inherit;}
   <div class="xp-strip">
     <div class="xp-row">
       <span id="xpCur" style="font-weight:600">0 XP</span>
-      <span id="xpNext" style="color:var(--text3)"></span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="xpNext" style="color:var(--text3)"></span>
+        <button class="g-help-btn" onclick="modoTutOpen('home')" title="Tutorial" style="width:22px;height:22px;font-size:.65rem;border-radius:5px">?</button>
+      </div>
     </div>
     <div class="xp-track"><div class="xp-fill" id="xpBar" style="width:0%"></div></div>
     <div class="xp-row" style="margin-top:2px">
       <span id="xpTitleLabel" style="font-size:.62rem;color:var(--text3)">Trainee · Nv.1</span>
-      <span id="xpNextLabel"  style="font-size:.62rem;color:var(--text3)"></span>
+      <span id="xpNextLabel" onclick="showLevelsPopover(event)" style="font-size:.62rem;color:var(--text3);cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" title="Ver todos os níveis"></span>
     </div>
+  </div>
+
+  <!-- Popover de níveis -->
+  <div id="levelsPopover" style="display:none;position:fixed;z-index:8000;background:var(--bg2);border:1px solid var(--line2);border-radius:12px;padding:12px;width:260px;max-height:420px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font:700 .78rem 'Inter',sans-serif">🏅 Tabela de Níveis</div>
+      <button onclick="document.getElementById('levelsPopover').style.display='none'" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;line-height:1;padding:0 2px">✕</button>
+    </div>
+    <div id="levelsPopoverList"></div>
   </div>
 
   <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
@@ -935,15 +963,15 @@ input{font-family:inherit;}
 
 <!-- ══ RANKING PAGE ══ -->
 <div class="page" id="rankingPage" style="background:var(--bg);padding:20px 20px 80px;gap:12px;overflow-y:auto">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between">
-    <div>
-      <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">🏆 Ranking</div>
-      <div style="font-size:.72rem;color:var(--text3);margin-top:2px">Top colaboradores</div>
+  <div>
+    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">🏆 Ranking</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+      <div style="font-size:.72rem;color:var(--text3)">Top colaboradores</div>
+      <button class="g-help-btn" onclick="modoTutOpen('ranking')" title="Tutorial" style="width:22px;height:22px;font-size:.65rem;border-radius:5px">?</button>
     </div>
-    <button class="g-help-btn" onclick="modoTutOpen('ranking')" style="margin-top:2px">?</button>
   </div>
   <!-- tabs -->
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);padding:3px">
+  <div id="rankingTabs" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);padding:3px">
     <button id="rtab-geral" onclick="switchRankTab('geral')" class="rtab rtab-active">🏆 Geral</button>
     <button id="rtab-xp"    onclick="switchRankTab('xp')"    class="rtab">⚡ XP</button>
     <button id="rtab-dom"   onclick="switchRankTab('dom')"   class="rtab">🏅 Dom.</button>
@@ -965,12 +993,15 @@ input{font-family:inherit;}
 
 <!-- ══ INDICATORS PAGE ══ -->
 <div class="page" id="indicatorsPage" style="background:var(--bg);padding:20px 20px 80px;gap:16px;overflow-y:auto">
-  <div style="display:flex;align-items:center;justify-content:space-between">
-    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">📊 Indicadores</div>
-    <button class="g-help-btn" onclick="modoTutOpen('indicadores')">?</button>
+  <div>
+    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">📊 Estatísticas</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+      <div style="font-size:.72rem;color:var(--text3)">Seu desempenho</div>
+      <button class="g-help-btn" onclick="modoTutOpen('indicadores')" title="Tutorial" style="width:22px;height:22px;font-size:.65rem;border-radius:5px">?</button>
+    </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+  <div id="indStatsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div class="ind-card2"><div class="ind-card-title">XP Total</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--gold)" id="statXP">0</div></div>
     <div class="ind-card2"><div class="ind-card-title">Nível</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--blue)" id="statLvl">1</div></div>
     <div class="ind-card2"><div class="ind-card-title">Dominados</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--green)" id="statDom">0</div></div>
@@ -1850,6 +1881,61 @@ function xpForNext(masteredCount) {
   return nextRow ? nextRow.dom : null;
 }
 
+function showLevelsPopover(e) {
+  e.stopPropagation();
+  const pop  = document.getElementById('levelsPopover');
+  const list = document.getElementById('levelsPopoverList');
+  if (!pop || !list) return;
+
+  if (pop.style.display !== 'none') { pop.style.display = 'none'; return; }
+
+  const mastered = Object.values(S.stats || {}).filter(s => s && s.lvl >= 3).length;
+  const curLv    = levelOf(mastered);
+
+  // Build grouped rows by title
+  let html = '';
+  let lastTitle = '';
+  for (const row of LEVEL_TABLE) {
+    const t = titleOf(row.lv);
+    if (t.title !== lastTitle) {
+      if (lastTitle) html += '</div>';
+      html += `<div style="margin-bottom:6px">
+        <div style="font:700 .58rem 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.1em;color:${t.color};padding:4px 0 3px">${t.title}</div>`;
+      lastTitle = t.title;
+    }
+    const isCur  = row.lv === curLv;
+    const isDone = row.lv < curLv;
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:6px;${isCur?'background:'+t.color+'18;border:1px solid '+t.color+'44':'border:1px solid transparent'}">
+      <span style="font:700 .65rem 'JetBrains Mono',monospace;color:${isCur?t.color:isDone?'var(--text3)':'var(--text2)'};min-width:28px">Nv.${row.lv}</span>
+      <span style="font-size:.62rem;color:var(--text3);flex:1">${row.dom === 0 ? 'Início' : row.dom+' dominados'}</span>
+      ${isCur ? `<span style="font-size:.6rem;color:${t.color};font-weight:700">← você</span>` : isDone ? '<span style="font-size:.7rem;color:var(--green)">✓</span>' : ''}
+    </div>`;
+  }
+  html += '</div>';
+  list.innerHTML = html;
+
+  // Position near the click
+  const rect = e.target.getBoundingClientRect();
+  const vw = window.innerWidth;
+  pop.style.display = 'block';
+  pop.style.top  = (rect.bottom + 6) + 'px';
+  let left = rect.left;
+  if (left + 260 > vw - 12) left = vw - 272;
+  pop.style.left = Math.max(12, left) + 'px';
+
+  // Scroll to current level
+  setTimeout(() => {
+    const cur = pop.querySelector('[style*="← você"]');
+    if (cur) cur.scrollIntoView({ block:'center', behavior:'instant' });
+  }, 0);
+}
+
+// Close popover on outside click
+document.addEventListener('click', () => {
+  const pop = document.getElementById('levelsPopover');
+  if (pop) pop.style.display = 'none';
+});
+
 // ── TÍTULOS ───────────────────────────────────────────────────────────
 const TITLE_MAP = [
   { maxLv:3,  title:'Trainee',          color:'#9ca3af' },
@@ -2416,9 +2502,7 @@ function startMode(mode) {
     if (!_mTutDone.has('countdown')) {
       _mTutOnClose = () => renderCD();
       modoTutCheck('countdown');
-    } else {
-      renderCD();
-    }
+    } else { renderCD(); }
     return;
   }
   if (mode === 'connect') {
@@ -2437,9 +2521,7 @@ function startMode(mode) {
     if (!_mTutDone.has('sequence')) {
       _mTutOnClose = () => renderSequence();
       modoTutCheck('sequence');
-    } else {
-      renderSequence();
-    }
+    } else { renderSequence(); }
     return;
   }
   if (mode === 'duel') {
@@ -4840,7 +4922,7 @@ const TUT_STEPS = [
   { icon:'⚡', title:'Barra de Progresso', body:'Aqui você acompanha seu nível e quantos produtos dominou. A barra avança conforme você domina mais produtos.', highlight:'.xp-strip', highlightLabel:'↑ Sua barra de nível e dominação' },
   { icon:'📊', title:'Suas Estatísticas', body:'Taxa de acerto, produtos dominados, quantos restam e sua sequência de dias jogando.', highlight:'.stats-row', highlightLabel:'↑ Acertos · Dominados · Restam · Sequência' },
   { icon:'🎮', title:'Modos de Treino', body:'Escolha entre vários modos: Foto→Nome, Digitação, Flashcard, Sobrevivência e muito mais. Cada modo tem regras e pontuação próprias.', highlight:'.mode-section', highlightLabel:'↑ Toque em qualquer modo para começar' },
-  { icon:'🏅', title:'Dominando Produtos', body:'Ao acertar um produto 3+ vezes seguidas ele fica dominado e sai do treino normal. Acompanhe tudo na aba Indicadores.', highlight:null },
+  { icon:'🏅', title:'Dominando Produtos', body:'Ao acertar um produto 3+ vezes seguidas ele fica dominado e sai do treino normal. Acompanhe tudo na aba Estatísticas.', highlight:null },
   { icon:'🚀', title:'Pronto para começar!', body:'Boa sorte! Jogue todo dia para manter sua sequência 🔥 e subir no ranking.', highlight:null }
 ];
 
@@ -4852,15 +4934,50 @@ async function initTutorial() {
   // Mantido apenas para compatibilidade com a chamada existente
 }
 
+function _tutSpotlight(el) {
+  const svg    = document.getElementById('tutSvgOverlay');
+  const path   = document.getElementById('tutHolePath');
+  const plain  = document.getElementById('tutOverlay');
+  if (!svg || !path) return;
+  if (!el) {
+    // No element: plain dark overlay
+    svg.style.display   = 'none';
+    if (plain) { plain.style.display = 'block'; plain.style.pointerEvents = 'all'; }
+    return;
+  }
+  const r    = el.getBoundingClientRect();
+  const pad  = 8;
+  const rx   = 10; // border-radius of hole
+  const W    = window.innerWidth, H = window.innerHeight;
+  const x1   = r.left - pad, y1 = r.top - pad;
+  const x2   = r.right + pad, y2 = r.bottom + pad;
+  // SVG path: full rect with a rounded-rect hole cut out (even-odd fill rule)
+  path.setAttribute('d',
+    `M0,0 H${W} V${H} H0 Z ` +
+    `M${x1+rx},${y1} H${x2-rx} Q${x2},${y1} ${x2},${y1+rx} V${y2-rx} Q${x2},${y2} ${x2-rx},${y2} H${x1+rx} Q${x1},${y2} ${x1},${y2-rx} V${y1+rx} Q${x1},${y1} ${x1+rx},${y1} Z`
+  );
+  path.setAttribute('fill-rule', 'evenodd');
+  svg.style.display   = 'block';
+  svg.style.pointerEvents = 'none';
+  if (plain) { plain.style.display = 'none'; }
+}
+
+function _tutUpdateSpotlight() {
+  if (!_tutHighlightEl) return;
+  _tutSpotlight(_tutHighlightEl);
+  _tutPositionBox({ highlight: true, _el: _tutHighlightEl });
+}
+
 function _tutRender() {
-  const overlay = document.getElementById('tutOverlay');
-  const box     = document.getElementById('tutBox');
-  if (!overlay || !box) return;
-  const step = TUT_STEPS[_tutStep];
+  const box = document.getElementById('tutBox');
+  if (!box) return;
+  // Use _spotSteps if set (for ranking/indicadores spotlight), else TUT_STEPS (home)
+  const steps = (_spotSteps && _spotSteps.length) ? _spotSteps : TUT_STEPS;
+  const step = steps[_tutStep];
   if (!step) { tutSkip(); return; }
   _tutClearHighlight();
 
-  document.getElementById('tutDots').innerHTML = TUT_STEPS.map((_,i) =>
+  document.getElementById('tutDots').innerHTML = steps.map((_,i) =>
     `<div style="width:${i===_tutStep?18:6}px;height:6px;border-radius:99px;background:${i===_tutStep?'var(--blue)':'var(--bg4)'};transition:all .2s"></div>`
   ).join('');
   document.getElementById('tutIcon').textContent  = step.icon;
@@ -4872,49 +4989,88 @@ function _tutRender() {
   else { hlLabel.style.display = 'none'; }
 
   const nextBtn = document.getElementById('tutNextBtn');
-  if (nextBtn) nextBtn.textContent = _tutStep >= TUT_STEPS.length - 1 ? 'Concluir ✓' : 'Próximo →';
+  if (nextBtn) nextBtn.textContent = _tutStep >= steps.length - 1 ? 'Concluir ✓' : 'Próximo →';
 
-  overlay.style.display = 'block';
-  box.style.display     = 'flex';
-  _tutPositionBox(step);
+  box.style.display = 'flex';
 
   if (step.highlight) {
     const el = document.querySelector(step.highlight);
-    if (el) { _tutHighlightEl = el; el.classList.add('tut-highlight-el'); el.scrollIntoView({behavior:'smooth',block:'center'}); }
+    if (el) {
+      _tutHighlightEl = el;
+      el.classList.add('tut-highlight-el');
+      el.scrollIntoView({ behavior: 'instant', block: 'center' });
+      _tutSpotlight(el);
+      _tutPositionBox(step);
+    } else {
+      _tutSpotlight(null);
+      _tutPositionBox(step);
+    }
+  } else {
+    _tutSpotlight(null);
+    _tutPositionBox(step);
   }
 }
 
 function _tutPositionBox(step) {
   const box = document.getElementById('tutBox');
   if (!box) return;
-  if (!step.highlight) {
-    box.style.cssText += ';top:50%;left:50%;transform:translate(-50%,-50%);bottom:auto;right:auto'; return;
-  }
-  const el = document.querySelector(step.highlight);
-  if (!el) { box.style.cssText += ';top:50%;left:50%;transform:translate(-50%,-50%);bottom:auto;right:auto'; return; }
+  const resetCenter = () => {
+    box.style.top = '50%'; box.style.left = '50%';
+    box.style.transform = 'translate(-50%,-50%)';
+    box.style.bottom = 'auto'; box.style.right = 'auto'; box.style.marginLeft = '0';
+  };
+  const el = step._el || (step.highlight ? document.querySelector(step.highlight) : null);
+  if (!el) { resetCenter(); return; }
+
   const rect = el.getBoundingClientRect();
-  const vw   = window.innerWidth;
-  box.style.transform = ''; box.style.top = 'auto'; box.style.bottom = 'auto';
-  box.style.left = '50%'; box.style.right = 'auto';
-  box.style.marginLeft = '-' + Math.round(Math.min(320, vw * 0.9) / 2) + 'px';
-  if (window.innerHeight - rect.bottom >= 240) { box.style.top = (rect.bottom + 12 + window.scrollY) + 'px'; }
-  else if (rect.top >= 240)                    { box.style.top = (rect.top - 12 - 280 + window.scrollY) + 'px'; }
-  else                                         { box.style.bottom = '16px'; box.style.top = 'auto'; }
+  const vw   = window.innerWidth, vh = window.innerHeight;
+  const boxW = Math.min(320, vw * 0.9), boxH = 280;
+  const pad  = 8;
+
+  box.style.transform = ''; box.style.right = 'auto'; box.style.marginLeft = '0';
+  let left = rect.left + rect.width / 2 - boxW / 2;
+  left = Math.max(12, Math.min(left, vw - boxW - 12));
+  box.style.left = left + 'px';
+
+  const spaceBelow = vh - (rect.bottom + pad);
+  const spaceAbove = rect.top - pad;
+  if (spaceBelow >= boxH + 16)      { box.style.top = (rect.bottom + pad + 12) + 'px'; box.style.bottom = 'auto'; }
+  else if (spaceAbove >= boxH + 16) { box.style.top = (rect.top - pad - boxH - 12) + 'px'; box.style.bottom = 'auto'; }
+  else                               { box.style.top = Math.max(12, (vh - boxH) / 2) + 'px'; box.style.bottom = 'auto'; }
 }
 
 function _tutClearHighlight() {
   if (_tutHighlightEl) { _tutHighlightEl.classList.remove('tut-highlight-el'); _tutHighlightEl = null; }
+  const svg = document.getElementById('tutSvgOverlay');
+  if (svg) svg.style.display = 'none';
+  const plain = document.getElementById('tutOverlay');
+  if (plain) plain.style.display = 'none';
 }
 
 function tutNext() {
   _tutStep++;
-  if (_tutStep >= TUT_STEPS.length) { tutSkip(); return; }
+  const steps = (_spotSteps && _spotSteps.length) ? _spotSteps : TUT_STEPS;
+  if (_tutStep >= steps.length) { tutSkip(); return; }
   _tutRender();
 }
 
 function tutSkip() {
-  // Redireciona para o sistema unificado de fechar tutorial de modo
-  _mTutClose();
+  _tutClearHighlight();
+  const overlay = document.getElementById('tutOverlay');
+  const box     = document.getElementById('tutBox');
+  if (overlay) overlay.style.display = 'none';
+  if (box)     box.style.display     = 'none';
+
+  // Restaura botões para estado padrão
+  const nextBtn = document.getElementById('tutNextBtn');
+  if (nextBtn) { nextBtn.textContent = 'Próximo →'; nextBtn.setAttribute('onclick', 'tutNext()'); }
+  const skipBtn = document.getElementById('tutSkipBtn');
+  if (skipBtn) { skipBtn.style.display = ''; skipBtn.setAttribute('onclick', 'tutSkip()'); skipBtn.textContent = 'Pular tutorial'; }
+
+  // Salva o modo correto como visto
+  if (!_mTutFromBtn && _mTutMode) _mTutSaveDone(_mTutMode);
+  _mTutMode = null;
+  _spotSteps = [];
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -5010,19 +5166,19 @@ const MODO_TUT_STEPS = {
     { icon:'🚀', title:'Pronto para começar!', body:'Jogue todo dia para manter sua sequência 🔥 e subir no ranking.' },
   ],
   ranking: [
-    { icon:'🏆', title:'Score Geral', body:'O ranking principal combina 4 indicadores: XP (35%), Taxa de acerto (35%), Streak (15%) e Produtos dominados (15%).' },
-    { icon:'⚡🏅🎯✅', title:'Abas de Ranking', body:'Alterne entre XP puro, Domínio (produtos dominados), Score combinado ou Acertividade. Cada aba tem uma lógica diferente.' },
-    { icon:'✅', title:'Ranking de Acerto', body:'No ranking de Acertividade há um mínimo de respostas para participar — evita que quem jogou pouco apareça no topo com 100%.' },
-    { icon:'📊', title:'Seus chips', body:'Nos cards do ranking você vê seus pontos em cada categoria: XP, Acerto, Streak e Dominados.' },
+    { icon:'🏆', title:'Score Geral', body:'O ranking principal combina 4 indicadores: XP (35%), Taxa de acerto (35%), Streak (15%) e Produtos dominados (15%).', highlight:'#rankingList', highlightLabel:'↑ Lista do ranking' },
+    { icon:'⚡🏅🎯✅', title:'Abas de Ranking', body:'Alterne entre XP puro, Domínio, Score combinado ou Acertividade. Cada aba tem uma lógica diferente.', highlight:'#rankingTabs', highlightLabel:'↑ Selecione a aba aqui' },
+    { icon:'✅', title:'Ranking de Acerto', body:'No ranking de Acertividade há um mínimo de respostas para participar — evita que quem jogou pouco apareça no topo com 100%.', highlight:'#rankingTabs', highlightLabel:'↑ Aba Acerto' },
+    { icon:'📊', title:'Seus chips', body:'Nos cards do ranking você vê seus pontos em cada categoria: XP, Acerto, Streak e Dominados.', highlight:'#rankingList', highlightLabel:'↑ Seus dados em cada card' },
   ],
   indicadores: [
-    { icon:'⚡🏅', title:'XP e Nível', body:'O XP acumula com cada acerto em qualquer modo. O Nível sobe conforme você domina mais produtos — não é por XP puro.' },
-    { icon:'✅', title:'Taxa de Acerto', body:'Percentual de acertos no total de respostas desde o início. Quanto mais você joga, mais estável fica.' },
-    { icon:'🔥', title:'Streak', body:'Dias consecutivos jogando. Pular um dia zera o streak — a menos que você tenha escudos 🛡️ para proteger.' },
-    { icon:'🏅', title:'Progresso Geral', body:'Barra mostrando quantos dos 596 produtos você já dominou. Dominar = acertar o mesmo produto várias vezes seguidas.' },
-    { icon:'📈', title:'Histórico', body:'Suas últimas rodadas: modo, acertos, erros e pontuação. Útil para ver sua evolução ao longo do tempo.' },
-    { icon:'❌✅', title:'Mais erra / Mais acerta', body:'Os produtos com maior e menor taxa de erro. Use essa lista para focar nos seus pontos fracos.' },
-    { icon:'📦', title:'Por tipo de produto', body:'Taxa de acerto agrupada por categoria (Mesa, Cadeira, Poltrona…). Descubra quais tipos você domina melhor.' },
+    { icon:'⚡🏅', title:'XP e Nível', body:'O XP acumula com cada acerto em qualquer modo. O Nível sobe conforme você domina mais produtos — não é por XP puro.', highlight:'#indStatsGrid', highlightLabel:'↑ XP e Nível' },
+    { icon:'✅', title:'Taxa de Acerto', body:'Percentual de acertos no total de respostas desde o início. Quanto mais você joga, mais estável fica.', highlight:'#indStatsGrid', highlightLabel:'↑ Taxa de Acerto' },
+    { icon:'🔥', title:'Streak', body:'Dias consecutivos jogando. Pular um dia zera o streak — a menos que você tenha escudos 🛡️ para proteger.', highlight:'#indStatsGrid', highlightLabel:'↑ Streak' },
+    { icon:'🏅', title:'Progresso Geral', body:'Barra mostrando quantos dos 596 produtos você já dominou. Dominar = acertar o mesmo produto várias vezes seguidas.', highlight:'#indicatorsPage .ind-prog-big', highlightLabel:'↑ Seu progresso' },
+    { icon:'📈', title:'Histórico', body:'Suas últimas rodadas: modo, acertos, erros e pontuação. Útil para ver sua evolução ao longo do tempo.', highlight:'#indHistory', highlightLabel:'↑ Histórico de rodadas' },
+    { icon:'❌✅', title:'Mais erra / Mais acerta', body:'Os produtos com maior e menor taxa de erro. Use essa lista para focar nos seus pontos fracos.', highlight:'#indHard', highlightLabel:'↑ Produtos que você mais erra' },
+    { icon:'📦', title:'Por tipo de produto', body:'Taxa de acerto agrupada por categoria (Mesa, Cadeira, Poltrona…). Descubra quais tipos você domina melhor.', highlight:'#indByType', highlightLabel:'↑ Por tipo de produto' },
   ],
 };
 
@@ -5032,7 +5188,7 @@ let _mTutStep    = 0;
 let _mTutSteps   = [];
 let _mTutFromBtn = false;
 let _mTutDone    = new Set();
-let _mTutOnClose = null; // callback executado ao fechar tutorial
+let _mTutOnClose = null; // callback após fechar tutorial
 
 // ── Carrega modos já vistos (chamado após login confirmado) ───────────
 async function _mTutLoadDone() {
@@ -5079,9 +5235,20 @@ async function _mTutSaveDone(mode) {
 }
 
 // ── Chamada automática ao entrar no modo (1ª vez apenas) ─────────────
+// ── Modos que usam o sistema de spotlight (igual à home) ─────────────
+const _SPOTLIGHT_MODES = new Set(['home','ranking','indicadores']);
+
+// Variável para steps do modo atual no sistema spotlight
+let _spotSteps = [];
+
 function modoTutCheck(mode) {
   if (!mode) return;
   if (_mTutDone.has(mode)) return;
+  if (_SPOTLIGHT_MODES.has(mode)) {
+    _mTutMode = mode; _mTutFromBtn = false;
+    _spotSteps = mode === 'home' ? TUT_STEPS : (MODO_TUT_STEPS[mode] || []);
+    _tutStep = 0; _tutRender(); return;
+  }
   if (!MODO_TUT_STEPS[mode]) return;
   _mTutFromBtn = false;
   _mTutOpen(mode);
@@ -5089,6 +5256,11 @@ function modoTutCheck(mode) {
 
 // ── Chamada pelo botão (?) — sempre abre ─────────────────────────────
 function modoTutOpen(mode) {
+  if (_SPOTLIGHT_MODES.has(mode)) {
+    _mTutMode = mode; _mTutFromBtn = true;
+    _spotSteps = mode === 'home' ? TUT_STEPS : (MODO_TUT_STEPS[mode] || []);
+    _tutStep = 0; _tutRender(); return;
+  }
   if (!MODO_TUT_STEPS[mode]) return;
   _mTutFromBtn = true;
   _mTutOpen(mode);
@@ -5151,6 +5323,10 @@ function _mTutNext() {
 }
 
 function _mTutClose() {
+  // Se o tutorial da home está ativo, delegar para tutSkip (que limpa highlight)
+  if (_mTutMode === 'home') { tutSkip(); return; }
+
+  _tutClearHighlight();
   const overlay = document.getElementById('tutOverlay');
   const box     = document.getElementById('tutBox');
   if (overlay) overlay.style.display = 'none';
