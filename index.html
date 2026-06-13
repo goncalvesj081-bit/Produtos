@@ -2745,6 +2745,9 @@ function endGame() {
   clearInterval(G.timer);
   clearInterval(cdTimer);
 
+  // Acúmulo: XP só é dado no final com o score real (não por acerto)
+  if (G.mode === 'acumulo' && G.score > 0) addXP(G.score);
+
   // Checa conquistas ANTES do saveRound para que syncProfile inclua as novas
   const newAchs = checkAchs();
 
@@ -4395,15 +4398,15 @@ function acResolve(ok) {
     acState.streak     += 1;
     acState.multiplier  = Math.min(8, acState.multiplier * 2);
     G.score += earned; G.cor++; G.combo++;
-    addXP(earned);
     floatPts('+' + earned, 'var(--gold)');
     updateStat(p.id, true);
     checkAchs();
     if (c) c.style.background = 'rgba(34,197,94,.08)';
-    toast(`✓ +${earned} pts · ×${acState.multiplier} próxima`);
+    toast(`✓ +${earned} pts acumulados · ×${acState.multiplier} próxima`);
     setTimeout(() => { if (c) c.style.background = ''; G.cur++; renderAcumulo(); }, 800);
   } else {
     const lost = acState.bank;
+    G.score -= lost; // reverte os pontos perdidos do score
     acState.bank       = 0;
     acState.streak     = 0;
     acState.multiplier = 1;
