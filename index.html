@@ -389,8 +389,8 @@ input{font-family:inherit;}
 .login-toggle{background:none;border:none;color:var(--text3);font:500 .76rem 'Inter',sans-serif;text-align:center;padding:4px;}
 
 /* BOTTOM SHEET */
-#sheetOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;}
-#masterSheet{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;z-index:301;max-height:80dvh;flex-direction:column;border-top:1px solid var(--line);}
+#sheetOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:399;}
+#masterSheet{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;z-index:400;max-height:80dvh;flex-direction:column;border-top:1px solid var(--line);overflow:hidden;}
 
 /* TOAST */
 #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(120px);opacity:0;background:var(--bg3);color:var(--text);border:1px solid var(--line2);border-radius:40px;padding:8px 20px;font:700 .8rem 'Inter',sans-serif;transition:transform .28s cubic-bezier(.34,1.4,.64,1),opacity .28s ease;z-index:99999;white-space:nowrap;pointer-events:none;}
@@ -761,6 +761,20 @@ input{font-family:inherit;}
 /* ── TUTORIAL ── */
 .tut-highlight-el{outline:3px solid var(--blue) !important;outline-offset:4px !important;border-radius:10px !important;animation:tutPulse 1.2s ease-in-out infinite;position:relative;z-index:8999;}
 @keyframes tutPulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}50%{box-shadow:0 0 0 8px rgba(59,130,246,0)}}
+
+/* ── BOTÃO TUTORIAL DE MODO ── */
+.g-help-btn {
+  background: none;
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  color: var(--text3);
+  width: 34px; height: 34px;
+  font: 700 .85rem 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: border-color .12s, color .12s;
+}
+.g-help-btn:hover { border-color: var(--blue); color: var(--blue); }
 </style>
 </head>
 <body>
@@ -769,7 +783,10 @@ input{font-family:inherit;}
 <div id="toast"></div>
 <div id="tutOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9000;pointer-events:all"></div>
 <div id="tutBox" style="display:none;position:fixed;z-index:9001;background:var(--bg2);border:1px solid var(--line2);border-radius:14px;padding:20px 18px 16px;width:min(320px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.6);flex-direction:column;gap:12px">
-  <div id="tutDots" style="display:flex;gap:5px;justify-content:center"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+  <div id="tutDots" style="display:flex;gap:5px"></div>
+  <button onclick="_mTutClose()" style="background:none;border:none;color:var(--text3);font-size:1.1rem;line-height:1;padding:2px 4px;cursor:pointer">✕</button>
+</div>
   <div style="text-align:center">
     <div id="tutIcon" style="font-size:2rem;line-height:1;margin-bottom:6px"></div>
     <div id="tutTitle" style="font:700 .95rem 'Inter',sans-serif;letter-spacing:-.2px"></div>
@@ -777,7 +794,7 @@ input{font-family:inherit;}
   <div id="tutBody" style="font-size:.78rem;color:var(--text2);line-height:1.55;text-align:center"></div>
   <div id="tutHighlight" style="display:none;background:var(--blue2);border:1px solid var(--blue);border-radius:8px;padding:6px 10px;font-size:.68rem;color:var(--blue);text-align:center;font-weight:600"></div>
   <div style="display:flex;gap:8px;margin-top:4px">
-    <button onclick="tutSkip()" style="flex:1;background:none;border:1px solid var(--line2);border-radius:8px;padding:8px;font:500 .72rem 'Inter',sans-serif;color:var(--text3)">Pular tutorial</button>
+    <button id="tutSkipBtn" onclick="tutSkip()" style="flex:1;background:none;border:1px solid var(--line2);border-radius:8px;padding:8px;font:500 .72rem 'Inter',sans-serif;color:var(--text3)">Pular tutorial</button>
     <button id="tutNextBtn" onclick="tutNext()" style="flex:2;background:var(--blue);border:none;border-radius:8px;padding:8px;font:700 .8rem 'Inter',sans-serif;color:#fff">Próximo →</button>
   </div>
 </div>
@@ -853,7 +870,10 @@ input{font-family:inherit;}
       <div style="font-size:.72rem;color:var(--text3);margin-top:2px" id="homeUserName"></div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-      <div class="level-pill" id="homeLvl">Nv. 1</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="g-help-btn" onclick="modoTutOpen('home')">?</button>
+        <div class="level-pill" id="homeLvl">Nv. 1</div>
+      </div>
       <button onclick="doLogout()" style="background:none;border:none;font-size:.68rem;color:var(--text3);padding:0">Sair →</button>
     </div>
   </div>
@@ -915,9 +935,12 @@ input{font-family:inherit;}
 
 <!-- ══ RANKING PAGE ══ -->
 <div class="page" id="rankingPage" style="background:var(--bg);padding:20px 20px 80px;gap:12px;overflow-y:auto">
-  <div>
-    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">🏆 Ranking</div>
-    <div style="font-size:.72rem;color:var(--text3);margin-top:2px">Top colaboradores</div>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div>
+      <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">🏆 Ranking</div>
+      <div style="font-size:.72rem;color:var(--text3);margin-top:2px">Top colaboradores</div>
+    </div>
+    <button class="g-help-btn" onclick="modoTutOpen('ranking')" style="margin-top:2px">?</button>
   </div>
   <!-- tabs -->
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--r);padding:3px">
@@ -942,7 +965,10 @@ input{font-family:inherit;}
 
 <!-- ══ INDICATORS PAGE ══ -->
 <div class="page" id="indicatorsPage" style="background:var(--bg);padding:20px 20px 80px;gap:16px;overflow-y:auto">
-  <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">📊 Indicadores</div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font:800 1.1rem 'Inter',sans-serif;letter-spacing:-.3px">📊 Indicadores</div>
+    <button class="g-help-btn" onclick="modoTutOpen('indicadores')">?</button>
+  </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div class="ind-card2"><div class="ind-card-title">XP Total</div><div style="font:800 1.4rem 'JetBrains Mono',monospace;color:var(--gold)" id="statXP">0</div></div>
@@ -1117,7 +1143,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🏅 Dominados</span>
-    <div class="g-score" id="domScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('dominados')">?</button><div class="g-score" id="domScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row"><span class="g-prog-txt" id="domProgTxt">1 / 10</span></div>
@@ -1131,7 +1157,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode" id="treiTitle">📖 Treinamento</span>
-    <div class="g-score" id="treiScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('treinamento')">?</button><div class="g-score" id="treiScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row"><span class="g-prog-txt" id="treiProgTxt">1 / 8</span></div>
@@ -1160,7 +1186,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode" id="qzTitle">Foto → Nome</span>
-    <div class="g-score" id="qzScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('quiz')">?</button><div class="g-score" id="qzScore">0 pts</div></div>
   </div>
   <div class="g-progress" id="qzProgWrap">
     <div class="g-prog-row">
@@ -1179,7 +1205,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🧠 Flashcard</span>
-    <div class="g-score" id="fcScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('flashcard')">?</button><div class="g-score" id="fcScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1197,7 +1223,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">⌨️ Digite o Nome</span>
-    <div class="g-score" id="tyScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('type')">?</button><div class="g-score" id="tyScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1215,7 +1241,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🔍 Caça à Foto</span>
-    <div class="g-score" id="huntScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('hunt')">?</button><div class="g-score" id="huntScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1234,7 +1260,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🎯 Silhueta</span>
-    <div class="g-score" id="silScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('silhouette')">?</button><div class="g-score" id="silScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1252,7 +1278,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">⏱️ Contagem</span>
-    <div class="g-score" id="cdScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('countdown')">?</button><div class="g-score" id="cdScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1271,7 +1297,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🔀 Conecta</span>
-    <div class="g-score" id="cnScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('connect')">?</button><div class="g-score" id="cnScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1289,7 +1315,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🃏 Par Perfeito</span>
-    <div class="g-score" id="ppScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('parperfeit')">?</button><div class="g-score" id="ppScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1308,7 +1334,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🔢 Sequência</span>
-    <div class="g-score" id="seqScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('sequence')">?</button><div class="g-score" id="seqScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1326,7 +1352,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode">🎰 Dupla ou Nada</span>
-    <div class="g-score" id="duelScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('duel')">?</button><div class="g-score" id="duelScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1344,7 +1370,7 @@ input{font-family:inherit;}
   <div class="g-bar">
     <button class="g-back" onclick="goHome()">← Voltar</button>
     <span class="g-mode" id="randMode">🎲 Aleatório</span>
-    <div class="g-score" id="randScore">0 pts</div>
+    <div style="display:flex;align-items:center;gap:6px"><button class="g-help-btn" onclick="modoTutOpen('random')">?</button><div class="g-score" id="randScore">0 pts</div></div>
   </div>
   <div class="g-progress">
     <div class="g-prog-row">
@@ -1382,14 +1408,14 @@ input{font-family:inherit;}
      DATA
 ══════════════════════════════════════ -->
 <!-- BOTTOM SHEET: DOMINADOS -->
-<div id="sheetOverlay" onclick="closeSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000"></div>
-<div id="masterSheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;z-index:1001;max-height:80dvh;flex-direction:column">
+<div id="sheetOverlay" onclick="closeSheet()"></div>
+<div id="masterSheet">
   <div style="padding:16px 16px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-    <div style="font:700 1rem 'Space Grotesk',sans-serif">🏅 Produtos Dominados</div>
-    <button onclick="closeSheet()" style="background:none;border:none;font-size:1.4rem;color:#9A9287;padding:4px 8px">×</button>
+    <div style="font:700 1rem 'Space Grotesk',sans-serif;color:var(--text)">🏅 Produtos Dominados</div>
+    <button onclick="closeSheet()" style="background:none;border:none;font-size:1.4rem;color:var(--text2);padding:4px 8px;cursor:pointer">×</button>
   </div>
-  <div style="padding:6px 16px 4px;font-size:.72rem;color:#9A9287" id="sheetCount"></div>
-  <div id="sheetGrid" style="overflow-y:auto;padding:10px 16px 32px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+  <div style="padding:6px 16px 4px;font-size:.72rem;color:var(--text2)" id="sheetCount"></div>
+  <div id="sheetGrid" style="overflow-y:auto;padding:12px 12px 40px;display:grid;gap:10px"></div>
 </div>
 
 </div><!-- end main-content -->
@@ -1447,6 +1473,10 @@ function navTo(id) {
   if(id==='rankingPage')    setTimeout(loadRankingPage, 50);
   if(id==='indicatorsPage') setTimeout(renderIndicadores, 50);
   if(id==='adminPage')      setTimeout(loadAdminPage, 50);
+  // Tutorial automático na 1ª visita
+  if(id==='home')           setTimeout(() => modoTutCheck('home'), 600);
+  if(id==='rankingPage')    setTimeout(() => modoTutCheck('ranking'), 600);
+  if(id==='indicatorsPage') setTimeout(() => modoTutCheck('indicadores'), 600);
 }
 
 function showLogin() {
@@ -1508,6 +1538,7 @@ async function initAuth() {
       if (activePage === 'rankingPage')    setTimeout(loadRankingPage,   200);
       if (activePage === 'indicatorsPage') setTimeout(renderIndicadores, 200);
       if (activePage === 'adminPage' && currentUser?.is_admin) setTimeout(loadAdminPage, 200);
+  _mTutLoadDone(); // carrega modos já vistos após login confirmado
       setTimeout(updateHomeUI, 300);
     } else {
       currentUser = null;
@@ -2335,6 +2366,7 @@ function startMode(mode) {
     G.queue  = buildQueue(15, false);
     G.total  = G.queue.length;
     show('flashcard');
+    modoTutCheck('flashcard');
     renderFC();
     return;
   }
@@ -2342,6 +2374,7 @@ function startMode(mode) {
     G.queue  = buildQueue(10, mode==='review');
     G.total  = G.queue.length;
     show('typing');
+    modoTutCheck(G.mode === 'review' ? null : 'type');
     renderType();
     return;
   }
@@ -2352,7 +2385,12 @@ function startMode(mode) {
     show('quiz');
     document.getElementById('qzTitle').textContent = '⚡ 60 Segundos';
     renderQuiz();
-    startBattleTimer();
+    if (!_mTutDone.has('battle')) {
+      _mTutOnClose = () => startBattleTimer();
+      modoTutCheck('battle');
+    } else {
+      startBattleTimer();
+    }
     return;
   }
   if (mode === 'survival') {
@@ -2360,50 +2398,66 @@ function startMode(mode) {
     G.total  = G.queue.length;
     show('quiz');
     document.getElementById('qzTitle').textContent = '❤️ Sobrevivência';
+    modoTutCheck('survival');
     renderQuiz();
     return;
   }
   if (mode === 'hunt') {
     G.queue = buildQueue(10, false); G.total = G.queue.length;
-    show('hunt'); renderHunt(); return;
+    show('hunt'); modoTutCheck('hunt'); renderHunt(); return;
   }
   if (mode === 'silhouette') {
     G.queue = buildQueue(10, false); G.total = G.queue.length;
-    show('silhouette'); renderSil(); return;
+    show('silhouette'); modoTutCheck('silhouette'); renderSil(); return;
   }
   if (mode === 'countdown') {
     G.queue = buildQueue(10, false); G.total = G.queue.length;
-    show('countdown'); renderCD(); return;
+    show('countdown');
+    if (!_mTutDone.has('countdown')) {
+      _mTutOnClose = () => renderCD();
+      modoTutCheck('countdown');
+    } else {
+      renderCD();
+    }
+    return;
   }
   if (mode === 'connect') {
     G.score=0; G.cor=0; G.wr=0; G.combo=0;
     cnState = { batch:[], selPhoto:null, selName:null, matched:0, rounds:0, total:0 };
-    show('connect'); renderConnect(); return;
+    show('connect'); modoTutCheck('connect'); renderConnect(); return;
   }
   if (mode === 'parperfeit') {
     G.score=0; G.cor=0; G.wr=0; G.combo=0; G.cur=0;
-    show('parperfeit'); renderParPerfeito(); return;
+    show('parperfeit'); modoTutCheck('parperfeit'); renderParPerfeito(); return;
   }
   if (mode === 'sequence') {
     G.score=0; G.cor=0; G.wr=0; G.combo=0; G.cur=0;
     seqState = { phase:'show', batch:[], cur:0, answers:{}, rounds:0 };
-    show('sequence'); renderSequence(); return;
+    show('sequence');
+    if (!_mTutDone.has('sequence')) {
+      _mTutOnClose = () => renderSequence();
+      modoTutCheck('sequence');
+    } else {
+      renderSequence();
+    }
+    return;
   }
   if (mode === 'duel') {
     duelState = { bank: 0, streak: 0, multiplier: 1 };
     G.queue = buildQueue(10, false); G.total = G.queue.length;
-    show('duel'); renderDuel(); return;
+    show('duel'); modoTutCheck('duel'); renderDuel(); return;
   }
   if (mode === 'random') {
     G.queue = buildQueue(15, false); G.total = 15;
     G.cur = 0; G.score = 0; G.cor = 0; G.wr = 0;
-    show('random'); renderRandom(); return;
+    show('random'); modoTutCheck('random'); renderRandom(); return;
   }
   // quiz default
   G.queue  = buildQueue(10, false);
   G.total  = G.queue.length;
   show('quiz');
   document.getElementById('qzTitle').textContent = '🖼 Foto → Nome';
+  modoTutCheck('quiz');
   renderQuiz();
 }
 
@@ -3439,6 +3493,7 @@ function startDominados() {
   if (sb) sb.style.display = 'none';
   if (bn) bn.style.display = 'none';
   show('dominados');
+  modoTutCheck('dominados');
   _domRenderQuiz();
 }
 
@@ -3549,8 +3604,13 @@ function startTreinamento() {
   if (sb) sb.style.display = 'none';
   if (bn) bn.style.display = 'none';
   show('treinamento');
-  _treiUpdateHeader();
-  _treiLearnPhase();
+  if (!_mTutDone.has('treinamento')) {
+    _mTutOnClose = () => { _treiUpdateHeader(); _treiLearnPhase(); };
+    modoTutCheck('treinamento');
+  } else {
+    _treiUpdateHeader();
+    _treiLearnPhase();
+  }
 }
 
 function _treiCurrentBatch() { return _treiG.batches[_treiG.batchIdx] || []; }
@@ -3711,22 +3771,35 @@ function showMastered() {
     ? mastered.length + ' produto' + (mastered.length > 1 ? 's' : '') + ' — 3+ acertos seguidos'
     : 'Nenhum produto dominado ainda';
 
-  if (mastered.length === 0) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#9A9287;padding:20px 0;font-size:.85rem">Jogue mais para dominar produtos!</div>';
-  } else {
-    grid.innerHTML = mastered.map(p => `
-      <div style="border-radius:10px;border:1px solid #E0DCD4;background:#fff;overflow:hidden">
-        <img src="${p.img}" style="width:100%;aspect-ratio:1;object-fit:contain;padding:6px;background:#fff;display:block">
-        <div style="font:600 .62rem 'Space Grotesk',sans-serif;padding:4px 6px 6px;line-height:1.3;color:#0C0C0C">${p.name}</div>
-      </div>`).join('');
-  }
-
+  grid.innerHTML = '';
   overlay.style.display = 'block';
   sheet.style.display   = 'flex';
-  // animate up
   sheet.style.transform = 'translateY(100%)';
+  sheet.style.transition = 'none';
+
+  // Força reflow para pegar offsetWidth real
+  sheet.getBoundingClientRect();
   sheet.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-  requestAnimationFrame(() => requestAnimationFrame(() => sheet.style.transform = 'translateY(0)'));
+  sheet.style.transform  = 'translateY(0)';
+
+  if (mastered.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px 0;font-size:.85rem">Jogue mais para dominar produtos!</div>';
+    return;
+  }
+
+  // Usa gridTemplateColumns:repeat(3,1fr) — o browser resolve o tamanho
+  // Forçamos a altura da imagem igual à largura do card via aspect-ratio no wrapper
+  const cols = window.innerWidth >= 900 ? 4 : 3;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.style.gap = '10px';
+
+  grid.innerHTML = mastered.map(p => `
+    <div style="border-radius:10px;border:1px solid var(--line2);background:var(--bg3)">
+      <div style="width:100%;padding-bottom:100%;position:relative;background:var(--bg4);border-radius:10px 10px 0 0;overflow:hidden">
+        <img src="${p.img}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;padding:8px;box-sizing:border-box">
+      </div>
+      <div style="font:600 .62rem 'Inter',sans-serif;padding:5px 6px 8px;line-height:1.3;color:var(--text);text-align:center;word-break:break-word">${p.name}</div>
+    </div>`).join('');
 }
 
 function closeSheet() {
@@ -4774,39 +4847,9 @@ const TUT_STEPS = [
 let _tutStep = 0, _tutHighlightEl = null;
 
 async function initTutorial() {
-  // Fallback local rápido — evita piscar o tutorial se já foi feito
-  if (localStorage.getItem('alu_tutorial_done')) return;
-
-  // Aguarda home estar visível antes de checar o BD
-  await new Promise(resolve => {
-    const tryShow = () => {
-      const home = document.getElementById('home');
-      if (home && home.classList.contains('on')) resolve();
-      else setTimeout(tryShow, 400);
-    };
-    tryShow();
-  });
-
-  // Checa no Supabase se o usuário já completou o tutorial
-  if (currentUser) {
-    try {
-      const { data } = await _supa
-        .from('profiles')
-        .select('tutorial_done')
-        .eq('id', currentUser.id)
-        .single();
-      if (data && data.tutorial_done) {
-        // Sincroniza o localStorage para o próximo acesso ser mais rápido
-        try { localStorage.setItem('alu_tutorial_done', '1'); } catch(e) {}
-        return;
-      }
-    } catch(e) {
-      console.warn('[tutorial] Falha ao checar tutorial_done no BD:', e);
-      // Se falhar, continua normal — localStorage é o fallback
-    }
-  }
-
-  setTimeout(() => { _tutStep = 0; _tutRender(); }, 800);
+  // initTutorial agora delega para o sistema unificado modoTutCheck
+  // O tour da home é tratado via modoTutCheck('home') no navTo
+  // Mantido apenas para compatibilidade com a chamada existente
 }
 
 function _tutRender() {
@@ -4870,25 +4913,268 @@ function tutNext() {
 }
 
 function tutSkip() {
-  _tutClearHighlight();
+  // Redireciona para o sistema unificado de fechar tutorial de modo
+  _mTutClose();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// TUTORIAL POR MODO
+// · Mesmo visual do tutorial da home (overlay + steps + Próximo/Pular)
+// · Flag por modo em profiles.tutorial_modes_done (array JSONB)
+// · localStorage como fallback: 'alu_mtut_done' (array JSON)
+// · Botão (?) no g-bar abre o tutorial a qualquer hora
+// ══════════════════════════════════════════════════════════════════════
+
+const MODO_TUT_STEPS = {
+  quiz: [
+    { icon:'🖼', title:'Foto → Nome', body:'Veja a foto do produto e escolha o nome correto entre 4 opções. Simples assim!' },
+    { icon:'🔥', title:'Combo', body:'Acerte respostas seguidas para acumular combo e multiplicar sua pontuação. Errou? O combo zera.' },
+    { icon:'🏅', title:'Dominando produtos', body:'Acerte o mesmo produto várias vezes seguidas e ele fica "dominado" — saindo do treino normal para não te entediar.' },
+  ],
+  flashcard: [
+    { icon:'🧠', title:'Flashcard', body:'Veja a foto e tente lembrar o nome. Toque no card para revelar a resposta.' },
+    { icon:'😕🤔✓', title:'Como foi?', body:'Avalie sua resposta: "Não sei", "Quase" ou "Sabia". Isso define quando o produto vai aparecer de novo.' },
+    { icon:'⏱️', title:'Repetição Espaçada', body:'Produtos que você sabe bem demoram mais para voltar. Os difíceis aparecem com mais frequência.' },
+  ],
+  type: [
+    { icon:'⌨️', title:'Digite o Nome', body:'Veja a foto e escreva o nome do produto. Não precisa ser perfeito — palavras-chave já valem.' },
+    { icon:'💡', title:'Dica', body:'O app verifica se as palavras que você digitou estão no nome correto. Mínimo 3 letras para valer.' },
+    { icon:'⚡', title:'Ritmo', body:'Quanto mais rápido e preciso você digitar, mais pontos acumula. Use Enter para confirmar.' },
+  ],
+  survival: [
+    { icon:'❤️', title:'Sobrevivência', body:'Você tem 3 vidas. Cada erro perde uma vida. Chegou a zero — acabou.' },
+    { icon:'🎯', title:'Objetivo', body:'Responda o máximo possível sem zerar as vidas. Não há limite de questões — aguente até o fim!' },
+    { icon:'🔥', title:'Combo', body:'Acerte em sequência para acumular combo e aumentar sua pontuação.' },
+  ],
+  battle: [
+    { icon:'⚡', title:'60 Segundos', body:'Você tem 1 minuto para acertar o máximo de produtos possível. Velocidade é tudo!' },
+    { icon:'⏱️', title:'Sem pausa', body:'O relógio não para. Errou? Próximo. Acertou? Próximo. Vá no ritmo sem se travar.' },
+    { icon:'🏆', title:'Meta', body:'Tente superar 30 acertos para desbloquear a conquista Velocista ⚡.' },
+  ],
+  hunt: [
+    { icon:'🔍', title:'Caça à Foto', body:'O nome do produto aparece. Você precisa encontrar a foto correta dentro de um grid.' },
+    { icon:'👀', title:'Cuidado', body:'As fotos são parecidas! Observe bem os detalhes antes de tocar. Errou = perde pontos.' },
+    { icon:'🔥', title:'Sequência limpa', body:'Complete uma rodada sem erros para desbloquear a conquista Detetive 🔍.' },
+  ],
+  silhouette: [
+    { icon:'🎯', title:'Silhueta', body:'A foto aparece pixelada. Quanto mais cedo você acertar, mais pontos ganha.' },
+    { icon:'👁', title:'Revelar', body:'Toque em "Revelar mais" para deixar a foto mais nítida — mas perde pontos a cada revelação.' },
+    { icon:'💎', title:'Estratégia', body:'Arrisque cedo para pontuação máxima (30 pts) ou revele mais para ter certeza (mínimo 10 pts).' },
+  ],
+  countdown: [
+    { icon:'⏱️', title:'Contagem Regressiva', body:'Você tem apenas 5 segundos para responder cada pergunta. Decida rápido!' },
+    { icon:'❌', title:'Tempo esgotado', body:'Se o tempo acabar sem resposta, conta como erro. Fique de olho no anel do cronômetro.' },
+    { icon:'🎯', title:'Foco', body:'Com pouco tempo, confie no seu instinto. Você treinou para isso!' },
+  ],
+  connect: [
+    { icon:'🔀', title:'Conecta', body:'Aparecem várias fotos e vários nomes. Associe cada foto ao seu nome tocando primeiro na foto, depois no nome.' },
+    { icon:'✅', title:'Par correto', body:'Acertou o par? Eles somem e você ganha pontos. Errou? Tente de novo.' },
+    { icon:'💡', title:'Dica', body:'Comece pelos produtos que você tem mais certeza e elimine as opções para facilitar os demais.' },
+  ],
+  parperfeit: [
+    { icon:'🃏', title:'Par Perfeito', body:'Um jogo da memória! Encontre os pares de foto + nome escondidos no tabuleiro.' },
+    { icon:'🧩', title:'Movimentos', body:'Vire duas cartas por vez. Achou o par? Elas ficam reveladas. Errou? Voltam viradas.' },
+    { icon:'🏆', title:'Desafio', body:'Complete em menos de 10 movimentos para desbloquear a conquista Rei da Memória 🧩.' },
+  ],
+  sequence: [
+    { icon:'🔢', title:'Sequência', body:'3 produtos aparecem por alguns segundos. Memorize-os! Depois você será testado sobre cada um.' },
+    { icon:'🧠', title:'Memorize', body:'Observe bem a foto de cada produto durante a contagem regressiva. Eles vão desaparecer!' },
+    { icon:'🎯', title:'Responda', body:'Após a memorização, cada produto aparece e você escolhe o nome correto entre 6 opções.' },
+  ],
+  duel: [
+    { icon:'🎰', title:'Dupla ou Nada', body:'Acumule pontos em sequência — cada acerto dobra o multiplicador da próxima resposta.' },
+    { icon:'💥', title:'Cuidado!', body:'Um único erro e você perde tudo que acumulou naquela sequência.' },
+    { icon:'🔥', title:'Estratégia', body:'Quanto mais acertos seguidos, mais arriscado fica. O multiplicador pode chegar a ×8!' },
+  ],
+  random: [
+    { icon:'🎲', title:'Aleatório', body:'A cada pergunta, o formato sorteia: pode ser quiz de 4 opções, digitação ou caça à foto.' },
+    { icon:'🌀', title:'Surpresa', body:'Você não sabe o que vem a seguir. Esteja preparado para qualquer formato!' },
+    { icon:'🏋️', title:'Treino completo', body:'Modo ideal para exercitar todas as habilidades de uma vez só.' },
+  ],
+  dominados: [
+    { icon:'🏅', title:'Dominados', body:'Modo exclusivo para produtos que você já domina (3+ acertos seguidos). Uma revisão leve para não esquecer.' },
+    { icon:'🔒', title:'Disponível no Nível 5+', body:'Este modo desbloqueia quando você atinge o Nível 5. Continue dominando produtos para chegar lá!' },
+    { icon:'📌', title:'Sem impacto', body:'Aqui não há XP, combo nem estatísticas globais. É só para manter o que você já sabe fresco na memória.' },
+  ],
+  treinamento: [
+    { icon:'📖', title:'Treinamento', body:'Aprenda antes de jogar! Os produtos aparecem com foto e nome por alguns segundos — memorize.' },
+    { icon:'🧪', title:'Fase de Teste', body:'Depois da memorização, você é testado com um quiz simples sobre os produtos que acabou de ver.' },
+    { icon:'🌱', title:'Para iniciantes', body:'Ideal para conhecer produtos novos antes de enfrentá-los nos modos competitivos. Sem pressão!' },
+  ],
+  home: [
+    { icon:'👋', title:'Bem-vindo ao Aluminas Treino!', body:'Este tour rápido vai te mostrar os principais elementos do app. Levará menos de 1 minuto.' },
+    { icon:'⚡', title:'Barra de Progresso', body:'Acompanha seu nível e quantos produtos dominou. A barra avança conforme você domina mais produtos.' },
+    { icon:'📊', title:'Suas Estatísticas', body:'Taxa de acerto, produtos dominados, quantos restam e sua sequência de dias jogando.' },
+    { icon:'🎮', title:'Modos de Treino', body:'Escolha entre vários modos: Foto→Nome, Digitação, Flashcard, Sobrevivência e muito mais.' },
+    { icon:'🏅', title:'Dominando Produtos', body:'Acerte o mesmo produto 3+ vezes seguidas e ele fica dominado — saindo do treino normal.' },
+    { icon:'🚀', title:'Pronto para começar!', body:'Jogue todo dia para manter sua sequência 🔥 e subir no ranking.' },
+  ],
+  ranking: [
+    { icon:'🏆', title:'Score Geral', body:'O ranking principal combina 4 indicadores: XP (35%), Taxa de acerto (35%), Streak (15%) e Produtos dominados (15%).' },
+    { icon:'⚡🏅🎯✅', title:'Abas de Ranking', body:'Alterne entre XP puro, Domínio (produtos dominados), Score combinado ou Acertividade. Cada aba tem uma lógica diferente.' },
+    { icon:'✅', title:'Ranking de Acerto', body:'No ranking de Acertividade há um mínimo de respostas para participar — evita que quem jogou pouco apareça no topo com 100%.' },
+    { icon:'📊', title:'Seus chips', body:'Nos cards do ranking você vê seus pontos em cada categoria: XP, Acerto, Streak e Dominados.' },
+  ],
+  indicadores: [
+    { icon:'⚡🏅', title:'XP e Nível', body:'O XP acumula com cada acerto em qualquer modo. O Nível sobe conforme você domina mais produtos — não é por XP puro.' },
+    { icon:'✅', title:'Taxa de Acerto', body:'Percentual de acertos no total de respostas desde o início. Quanto mais você joga, mais estável fica.' },
+    { icon:'🔥', title:'Streak', body:'Dias consecutivos jogando. Pular um dia zera o streak — a menos que você tenha escudos 🛡️ para proteger.' },
+    { icon:'🏅', title:'Progresso Geral', body:'Barra mostrando quantos dos 596 produtos você já dominou. Dominar = acertar o mesmo produto várias vezes seguidas.' },
+    { icon:'📈', title:'Histórico', body:'Suas últimas rodadas: modo, acertos, erros e pontuação. Útil para ver sua evolução ao longo do tempo.' },
+    { icon:'❌✅', title:'Mais erra / Mais acerta', body:'Os produtos com maior e menor taxa de erro. Use essa lista para focar nos seus pontos fracos.' },
+    { icon:'📦', title:'Por tipo de produto', body:'Taxa de acerto agrupada por categoria (Mesa, Cadeira, Poltrona…). Descubra quais tipos você domina melhor.' },
+  ],
+};
+
+// ── Estado ────────────────────────────────────────────────────────────
+let _mTutMode    = null;
+let _mTutStep    = 0;
+let _mTutSteps   = [];
+let _mTutFromBtn = false;
+let _mTutDone    = new Set();
+let _mTutOnClose = null; // callback executado ao fechar tutorial
+
+// ── Carrega modos já vistos (chamado após login confirmado) ───────────
+async function _mTutLoadDone() {
+  // 1. localStorage rápido
+  try {
+    const raw = localStorage.getItem('alu_mtut_done');
+    if (raw) _mTutDone = new Set(JSON.parse(raw));
+  } catch(e) {}
+
+  // 2. BD — só tenta se já tiver usuário logado
+  if (!currentUser) return;
+  try {
+    const { data } = await _supa
+      .from('profiles')
+      .select('tutorial_modes_done')
+      .eq('id', currentUser.id)
+      .single();
+    if (data && Array.isArray(data.tutorial_modes_done)) {
+      data.tutorial_modes_done.forEach(m => _mTutDone.add(m));
+      try { localStorage.setItem('alu_mtut_done', JSON.stringify([..._mTutDone])); } catch(e) {}
+    }
+  } catch(e) { console.warn('[modoTut] Falha ao carregar tutorial_modes_done:', e); }
+}
+
+// ── Salva modo como visto ─────────────────────────────────────────────
+async function _mTutSaveDone(mode) {
+  _mTutDone.add(mode);
+  try { localStorage.setItem('alu_mtut_done', JSON.stringify([..._mTutDone])); } catch(e) {}
+  if (!currentUser) return;
+  try {
+    const { data } = await _supa
+      .from('profiles')
+      .select('tutorial_modes_done')
+      .eq('id', currentUser.id)
+      .single();
+    const current = (data && Array.isArray(data.tutorial_modes_done)) ? data.tutorial_modes_done : [];
+    if (!current.includes(mode)) {
+      await _supa.from('profiles')
+        .update({ tutorial_modes_done: [...current, mode] })
+        .eq('id', currentUser.id);
+      console.log('[modoTut] Salvo no BD:', mode);
+    }
+  } catch(e) { console.warn('[modoTut] Falha ao salvar tutorial_modes_done:', e); }
+}
+
+// ── Chamada automática ao entrar no modo (1ª vez apenas) ─────────────
+function modoTutCheck(mode) {
+  if (!mode) return;
+  if (_mTutDone.has(mode)) return;
+  if (!MODO_TUT_STEPS[mode]) return;
+  _mTutFromBtn = false;
+  _mTutOpen(mode);
+}
+
+// ── Chamada pelo botão (?) — sempre abre ─────────────────────────────
+function modoTutOpen(mode) {
+  if (!MODO_TUT_STEPS[mode]) return;
+  _mTutFromBtn = true;
+  _mTutOpen(mode);
+}
+
+function _mTutOpen(mode) {
+  _mTutMode  = mode;
+  _mTutStep  = 0;
+  _mTutSteps = MODO_TUT_STEPS[mode] || [];
+  if (!_mTutSteps.length) return;
+  _mTutRender();
+}
+
+function _mTutRender() {
+  const overlay = document.getElementById('tutOverlay');
+  const box     = document.getElementById('tutBox');
+  if (!overlay || !box) return;
+
+  const step = _mTutSteps[_mTutStep];
+  if (!step) { _mTutClose(); return; }
+
+  // Dots
+  document.getElementById('tutDots').innerHTML = _mTutSteps.map((_,i) =>
+    `<div style="width:${i===_mTutStep?18:6}px;height:6px;border-radius:99px;
+       background:${i===_mTutStep?'var(--blue)':'var(--bg4)'};transition:all .2s"></div>`
+  ).join('');
+
+  document.getElementById('tutIcon').textContent  = step.icon;
+  document.getElementById('tutTitle').textContent = step.title;
+  document.getElementById('tutBody').textContent  = step.body;
+
+  const hlLabel = document.getElementById('tutHighlight');
+  if (hlLabel) hlLabel.style.display = 'none';
+
+  // Botão Próximo → aponta para _mTutNext via atributo onclick
+  const nextBtn = document.getElementById('tutNextBtn');
+  if (nextBtn) {
+    nextBtn.textContent = _mTutStep >= _mTutSteps.length - 1 ? 'Entendido ✓' : 'Próximo →';
+    nextBtn.setAttribute('onclick', '_mTutNext()');
+  }
+
+  // Botão Pular → aponta para _mTutClose; oculto quando aberto pelo (?)
+  const skipBtn = document.getElementById('tutSkipBtn');
+  if (skipBtn) {
+    skipBtn.style.display = _mTutFromBtn ? 'none' : '';
+    skipBtn.setAttribute('onclick', '_mTutClose()');
+    skipBtn.textContent = 'Pular tutorial';
+  }
+
+  // Centralizado
+  box.style.cssText += ';top:50%;left:50%;transform:translate(-50%,-50%);bottom:auto;right:auto;margin-left:0';
+  overlay.style.display = 'block';
+  box.style.display     = 'flex';
+}
+
+function _mTutNext() {
+  _mTutStep++;
+  if (_mTutStep >= _mTutSteps.length) { _mTutClose(); return; }
+  _mTutRender();
+}
+
+function _mTutClose() {
   const overlay = document.getElementById('tutOverlay');
   const box     = document.getElementById('tutBox');
   if (overlay) overlay.style.display = 'none';
   if (box)     box.style.display     = 'none';
-  // Salva localmente (fallback rápido)
-  try { localStorage.setItem('alu_tutorial_done', '1'); } catch(e) {}
-  // Salva no Supabase (fonte da verdade — persiste entre dispositivos)
-  if (currentUser && typeof _supa !== 'undefined') {
-    _supa.from('profiles')
-      .update({ tutorial_done: true })
-      .eq('id', currentUser.id)
-      .then(({ error }) => {
-        if (error) console.warn('[tutorial] Falha ao salvar tutorial_done no BD:', error);
-        else console.log('[tutorial] tutorial_done salvo no BD');
-      });
+
+  // Restaura botões para o tutorial da home
+  const nextBtn = document.getElementById('tutNextBtn');
+  if (nextBtn) { nextBtn.textContent = 'Próximo →'; nextBtn.setAttribute('onclick', 'tutNext()'); }
+  const skipBtn = document.getElementById('tutSkipBtn');
+  if (skipBtn) { skipBtn.style.display = ''; skipBtn.setAttribute('onclick', 'tutSkip()'); skipBtn.textContent = 'Pular tutorial'; }
+
+  // Salva como visto (só se foi automático, não pelo botão ?)
+  if (!_mTutFromBtn && _mTutMode) {
+    _mTutSaveDone(_mTutMode);
+  }
+  _mTutMode = null;
+
+  // Dispara callback de pós-tutorial (ex: iniciar timer do jogo)
+  if (_mTutOnClose) {
+    const cb = _mTutOnClose;
+    _mTutOnClose = null;
+    cb();
   }
 }
-
 initAuth();
 initTutorial();
 
