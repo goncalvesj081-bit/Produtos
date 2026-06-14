@@ -2364,6 +2364,7 @@ const STORE_PROGRESSION = [
   { id:'xp_boost',      ico:'⚡', name:'XP Boost ×1.5',    desc:'Próxima sessão com XP multiplicado.', cost:35, type:'single_use' },
   { id:'shield_extra',  ico:'🛡️', name:'Escudo de Streak',  desc:'Protege 1 dia sem jogar.', cost:50, type:'single_use' },
   { id:'turbo_review',  ico:'🎯', name:'Revisão Turbo',     desc:'Inicia sessão com seus 10 produtos mais errados.', cost:60, type:'single_use' },
+  { id:'focus_boost',   ico:'🔦', name:'Foco Total',        desc:'Próxima sessão prioriza produtos quase dominados — os que estão a 1 acerto de serem dominados!', cost:100, type:'single_use' },
 ];
 const STORE_TITLES = [
   { id:'title_star',    ico:'⭐', name:'Estrela',    cost:80,  daily:{ skip_q:1 } },
@@ -2421,7 +2422,8 @@ let S = {
 let G = {
   mode:null, score:0, cor:0, wr:0, cur:0, total:10,
   lives:3, combo:0, queue:[], answered:false,
-  timer:null, timerVal:60, _usedSecondChance:false
+  timer:null, timerVal:60, _usedSecondChance:false,
+  _focusBoost:false
 };
 
 function save() {
@@ -2758,6 +2760,24 @@ function weightedPick(pool, n, excl=[]) {
   return res;
 }
 function buildQueue(n, reviewOnly) {
+  // ── FOCO TOTAL: prioriza produtos quase dominados (lvl === 2) ────────
+  if (G._focusBoost) {
+    const almostDom = P.filter(p => { const st = S.stats[p.id]; return st && st.lvl === 2; });
+    if (almostDom.length >= 4) {
+      const shuffled = almostDom.slice().sort(() => Math.random() - .5);
+      const main     = shuffled.slice(0, Math.min(n, shuffled.length));
+      if (main.length < n) {
+        const used  = new Set(main.map(p => p.id));
+        const extra = P.filter(p => !dominated(p.id) && !used.has(p.id))
+                       .sort(() => Math.random() - .5)
+                       .slice(0, n - main.length);
+        return [...main, ...extra];
+      }
+      return main;
+    }
+    toast('ℹ️ Foco Total: poucos quase-dominados — rodada normal.');
+  }
+
   if (reviewOnly) {
     const pool = P.filter(p => { const st=S.stats[p.id]; return st && st.lvl < 3; });
     return weightedPick(pool.length ? pool : P, n);
@@ -3299,11 +3319,16 @@ function startMode(mode) {
   const xpBoostActive = S.inventory && S.inventory['xp_boost'];
   if (xpBoostActive) toast('⚡ XP Boost ×1.5 ativo nessa sessão!');
 
+  // Foco Total — prioriza quase-dominados (lvl===2), consome só ao finalizar
+  const focusBoostActive = S.inventory && S.inventory['focus_boost'];
+  if (focusBoostActive) toast('🎯🔥 Foco Total ativo! Priorizando quase-dominados.');
+
   G = { mode, score:0, cor:0, wr:0, cur:0, total:10,
         lives:3, combo:0, queue:[], answered:false,
         timer:null, timerVal:60, _usedSecondChance:false,
         _secondChanceArmed:false, _pendingAdvance:null, _extraLifeArmed:false,
-        _xpBoost: !!xpBoostActive, _turboReview: !!turboActive, _coinsEarned:0 };
+        _xpBoost: !!xpBoostActive, _turboReview: !!turboActive,
+        _focusBoost: !!focusBoostActive, _coinsEarned:0 };
 
   if (mode === 'flashcard') {
     G.queue  = turboActive ? buildTurboQueue(15) : buildQueue(15, false);
@@ -3594,6 +3619,13 @@ function endGame() {
   // Consome Revisão Turbo só se o jogador respondeu pelo menos 1 questão
   if (G._turboReview && (G.cor + G.wr) > 0 && S.inventory && S.inventory['turbo_review']) {
     delete S.inventory['turbo_review'];
+    save();
+    syncProfile();
+  }
+
+  // Consome Foco Total só se o jogador respondeu pelo menos 1 questão
+  if (G._focusBoost && (G.cor + G.wr) > 0 && S.inventory && S.inventory['focus_boost']) {
+    delete S.inventory['focus_boost'];
     save();
     syncProfile();
   }
@@ -6121,21 +6153,25 @@ const MODO_TUT_STEPS = {
     { icon:'🖼️', title:'Foto → Nome', body:'Uma foto do produto aparece. Escolha o nome correto entre 4 opções. Parece simples — mas os nomes são parecidos!' },
     { icon:'🔥', title:'Faça Combos', body:'Acertos seguidos constroem seu combo e multiplicam os pontos. Errou? O combo zera do zero. Mantenha o ritmo!' },
     { icon:'🏅', title:'Domine o Produto', body:'Acerte o mesmo produto várias vezes seguidas e ele fica dominado — não aparece mais no treino normal. Seu objetivo é dominar todos.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Ative o Foco Total (Loja · 🪙 100) antes de começar e esta rodada vai priorizar seus produtos quase dominados — os que estão a 1 acerto de serem dominados. Ótimo para acelerar o progresso!' },
     { icon:'🪙', title:'Ganhe AluCoins', body:'Combo ×5 = +2 🪙, Combo ×10 = +5 🪙, Rodada perfeita = +8 🪙. Use os itens da barra para se ajudar quando precisar.' },
   ],
   flashcard: [
     { icon:'🧠', title:'Flashcard — Memorização', body:'A foto do produto aparece. Tente lembrar o nome antes de revelar. É um treino de memória pura.' },
     { icon:'😕🤔✓', title:'Avalie sua Resposta', body:'Depois de revelar, escolha: "Não sei" (aparece logo), "Quase" (em breve) ou "Sabia" (demora mais para voltar). Seja honesto!' },
     { icon:'⏱️', title:'Repetição Espaçada', body:'O sistema inteligente traz de volta os produtos que você erra mais cedo e os que domina menos frequentemente. Máxima eficiência.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), os flashcards desta sessão vão priorizar seus produtos quase dominados — a 1 acerto de dominar. Use para bater metas de domínio rápido.' },
   ],
   type: [
     { icon:'⌨️', title:'Digite o Nome', body:'Veja a foto e escreva o nome do produto. Você não precisa acertar tudo — as palavras principais já valem.' },
     { icon:'💡', title:'Como Funciona', body:'O app verifica se as palavras-chave do que você digitou estão no nome correto. Mínimo 3 letras. "Mesa Lat" já pode contar!' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Ative o Foco Total (Loja · 🪙 100) e esta sessão vai focar nos seus produtos quase dominados. Digitar o nome deles é o jeito mais eficiente de consolidar o domínio!' },
     { icon:'🪙', title:'Bônus por Modo', body:'Digitação é o modo mais difícil — por isso cada acerto vale +1 AluCoin extra. Vale o esforço.' },
   ],
   survival: [
     { icon:'❤️', title:'Sobrevivência', body:'Você começa com 3 vidas. Cada erro custa uma vida. Chegou a zero — fim de jogo. Sem segunda chance... a menos que você tenha comprado!' },
     { icon:'🎯', title:'Sem Limite de Questões', body:'Não há um número fixo de rodadas. Jogue até as vidas acabarem ou até esgotar os produtos não dominados.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), a fila vai priorizar quase-dominados. Cuidado: se errar com vidas em jogo, pode custar caro — mas dominar mais rápido compensa!' },
     { icon:'🛡️', title:'Dica de Sobrevivente', body:'Use Vida Extra para recuperar corações e 2ª Chance para desfazer um erro grave. Compre na Loja antes de começar.' },
   ],
   battle: [
@@ -6147,15 +6183,18 @@ const MODO_TUT_STEPS = {
     { icon:'🔍', title:'Caça à Foto', body:'O nome do produto aparece. Você precisa encontrar a foto correta dentro de um grid de imagens.' },
     { icon:'👀', title:'Atenção aos Detalhes', body:'As fotos são parecidas! Observe materiais, formatos e cores. Clicar errado custa pontos.' },
     { icon:'📐', title:'Grid Cresce', body:'No começo são 4 fotos. Depois 6, depois 9. Fica mais difícil conforme você avança na rodada.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), o grid vai mostrar prioritariamente seus produtos quase dominados. Encontre a foto certa e feche o domínio de uma vez!' },
   ],
   silhouette: [
     { icon:'🎯', title:'Silhueta', body:'A foto começa pixelada e vai ficando mais nítida. Quanto mais cedo você acertar, mais pontos ganha — até 30 pts.' },
     { icon:'👁️', title:'Revelar ou Arriscar', body:'Toque em "Revelar mais" para ver melhor — mas perde pontos a cada revelação. Confiance no instinto para pontuação máxima.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), as silhuetas desta sessão vão priorizar seus quase-dominados. Reconhecer na pixelação é o teste final de domínio!' },
     { icon:'💎', title:'Estratégia', body:'Arrisque no pixel para 30 pts. Revele uma vez para uns 20. Revele tudo para uns 10. A escolha é sua.' },
   ],
   countdown: [
     { icon:'⏱️', title:'5 Segundos por Questão', body:'Só 5 segundos para responder. O anel vermelho mostra o tempo acabando. Não deixe zerar!' },
     { icon:'❌', title:'Tempo Esgotado = Erro', body:'Se o tempo acabar sem resposta, conta como erro automaticamente. Foque e decida rápido.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), a contagem regressiva vai aparecer só com seus quase-dominados. Sob pressão de tempo é onde o domínio real se prova!' },
     { icon:'🧠', title:'Confie no Instinto', body:'Com pouco tempo, a primeira impressão costuma ser certa. Quem treinou bem responde no automático.' },
   ],
   connect: [
@@ -6176,16 +6215,19 @@ const MODO_TUT_STEPS = {
   duel: [
     { icon:'🎰', title:'Dupla ou Nada', body:'Escreva o nome do produto. Cada acerto multiplica os pontos da próxima resposta: ×1 → ×2 → ×4 → ×8.' },
     { icon:'💥', title:'Perigo!', body:'Um único erro e você perde TUDO que acumulou nessa sequência. Quanto maior o multiplicador, maior o risco.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), o Dupla ou Nada vai trazer seus quase-dominados. Alto risco, alta recompensa — e você ainda fecha domínios no processo!' },
     { icon:'🔥', title:'Estratégia de Alto Risco', body:'Vale tentar chegar a ×8 e arriscar tudo? Ou garantir a pontuação atual? Você decide a hora de parar.' },
   ],
   acumulo: [
     { icon:'💰', title:'Acúmulo', body:'Igual ao Dupla ou Nada — mas com 4 opções de resposta em vez de digitação. Mesma adrenalina, acesso mais fácil.' },
     { icon:'×2×4×8', title:'Multiplicador até ×8', body:'Cada acerto dobra o multiplicador: ×1 → ×2 → ×4 → ×8. Acerte em sequência para pontuação explosiva.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Ative o Foco Total (Loja · 🪙 100) antes de começar e o Acúmulo vai priorizar seus quase-dominados. Acertar em sequência = combo de pontos E domínio fechado. Duplo ganho!' },
     { icon:'💥', title:'Cuidado!', body:'Um erro e perde tudo acumulado. Com o multiplicador em ×8, errar dói muito. Só vá se tiver confiança.' },
   ],
   random: [
     { icon:'🎲', title:'Aleatório', body:'A cada questão o formato é sorteado: pode ser quiz de 4 opções, digitação ou caça à foto. Você nunca sabe o que vem.' },
     { icon:'🌀', title:'Preparo Completo', body:'É o modo que mais exige versatilidade. Você precisa estar bem em todos os formatos para pontuar alto.' },
+    { icon:'🔦', title:'Boost: Foco Total', body:'Com o Foco Total ativo (Loja · 🪙 100), os produtos sorteados vão priorizar seus quase-dominados — independente do formato que sair. O combo perfeito para dominar rápido.' },
     { icon:'🏋️', title:'Treino Ideal', body:'Quer testar se realmente domina os produtos? Aqui é a prova definitiva. Sem zona de conforto.' },
   ],
   dominados: [
@@ -6228,6 +6270,7 @@ const MODO_TUT_STEPS = {
     { icon:'🪙', title:'Bem-vindo à Loja', body:'Aqui você troca AluCoins por vantagens reais no jogo. Seu saldo aparece no canto superior direito.' },
     { icon:'⚔️', title:'Itens de Gameplay', body:'Pular Questão, Eliminar 2 Opções, Segunda Chance e Vida Extra. Use durante as rodadas — equipe antes de começar.' },
     { icon:'🚀', title:'Itens de Progressão', body:'XP Boost ×1.5, Escudo de Streak e Revisão Turbo. Ativam automaticamente na próxima sessão que você iniciar.' },
+    { icon:'🔦', title:'Foco Total — Novo!', body:'Por 🪙 100, o Foco Total prioriza seus produtos quase dominados (a 1 acerto de dominar) em qualquer modo. A forma mais rápida de avançar no domínio do catálogo.' },
     { icon:'🏆', title:'Títulos de Prestígio', body:'Aparecem no seu nome no ranking. Além do status, cada título libera itens diários automáticos no inventário!' },
     { icon:'🐐', title:'G.O.A.T. — O Topo', body:'900 AluCoins. Mais de 1 mês jogando dedicado. Quem chega lá é reconhecido por todos no ranking como lenda absoluta.' },
   ],
