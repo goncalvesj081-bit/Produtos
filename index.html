@@ -2155,33 +2155,39 @@ const ACHS = [
   { id:'s10',        icon:'🎯', name:'Primeiros 10',        desc:'Responda 10 questões no total' },
   { id:'s100',       icon:'💯', name:'Centenário',          desc:'Responda 100 questões no total' },
   { id:'s500',       icon:'🧱', name:'Meio Mil',            desc:'Responda 500 questões no total' },
+  { id:'s1000',      icon:'💠', name:'Milhar',              desc:'Responda 1.000 questões no total' },
   // ── Combos ──
   { id:'combo5',     icon:'🔥', name:'Combo x5',            desc:'5 respostas seguidas corretas' },
   { id:'combo10',    icon:'💥', name:'Combo x10',           desc:'10 respostas seguidas corretas' },
   { id:'combo20',    icon:'🌋', name:'Combo x20',           desc:'20 respostas seguidas corretas' },
   // ── Rodadas perfeitas ──
-  { id:'perfect',    icon:'⭐', name:'Perfeito!',            desc:'10/10 numa rodada' },
-  { id:'perfect3',   icon:'🌟', name:'Trio Perfeito',       desc:'3 rodadas perfeitas (10/10)' },
+  { id:'perfect',    icon:'⭐', name:'Perfeito!',            desc:'Conclua uma rodada com 10/10 acertos' },
+  { id:'perfect3',   icon:'🌟', name:'Trio Perfeito',       desc:'Conquiste 3 rodadas perfeitas (10/10)' },
   // ── Modos específicos ──
-  { id:'survive',    icon:'💀', name:'Sobrevivente',         desc:'Complete sobrevivência sem errar' },
-  { id:'speed',      icon:'⚡', name:'Velocista',            desc:'30 acertos em 60 segundos' },
-  { id:'sniper',     icon:'🎯', name:'Franco-Atirador',     desc:'Acerte 5 silhuetas seguidas' },
-  { id:'photohunt',  icon:'🔍', name:'Detetive',            desc:'Complete uma rodada de Caça à Foto sem errar' },
-  { id:'memoryking', icon:'🧩', name:'Rei da Memória',      desc:'Complete Par Perfeito em menos de 10 movimentos' },
-  { id:'typist',     icon:'⌨️', name:'Digitador',           desc:'Acerte 10 seguidos no modo Digite' },
+  { id:'survive',    icon:'💀', name:'Sobrevivente',         desc:'Complete o modo Sobrevivência sem errar nenhuma vez' },
+  { id:'speed',      icon:'⚡', name:'Velocista',            desc:'Acerte 30 produtos no modo 60 Segundos' },
+  { id:'sniper',     icon:'🎯', name:'Franco-Atirador',     desc:'Acerte 5 silhuetas seguidas sem errar' },
+  { id:'photohunt',  icon:'🔍', name:'Detetive',            desc:'Complete uma rodada de Caça à Foto (10 questões) sem errar' },
+  { id:'memoryking', icon:'🧩', name:'Rei da Memória',      desc:'Complete Par Perfeito em 10 movimentos ou menos' },
+  { id:'typist',     icon:'⌨️', name:'Digitador',           desc:'Acerte 10 digitações seguidas no modo Digite' },
   // ── Domínio ──
-  { id:'dom10',      icon:'🏅', name:'Dominando',           desc:'Domine 10 produtos' },
+  { id:'dom10',      icon:'🏅', name:'Dominando',           desc:'Domine 10 produtos (acerte o mesmo 3+ vezes seguidas)' },
   { id:'dom50',      icon:'🥇', name:'Expert',              desc:'Domine 50 produtos' },
   { id:'dom100',     icon:'💎', name:'Mestre',              desc:'Domine 100 produtos' },
-  { id:'goat',       icon:'🐐', name:'G.O.A.T.',            desc:'Domine todos os produtos do catálogo' },
+  { id:'dom200',     icon:'🔮', name:'Enciclopédia',        desc:'Domine 200 produtos' },
+  { id:'dom300',     icon:'🏰', name:'Colecionador',        desc:'Domine 300 produtos' },
+  { id:'goat',       icon:'🐐', name:'G.O.A.T.',            desc:'Domine todos os produtos do catálogo — o feito máximo' },
   // ── XP / Nível ──
   { id:'xp500',      icon:'📈', name:'Em Ascensão',         desc:'Acumule 500 XP' },
   { id:'xp2000',     icon:'🚀', name:'Decolagem',           desc:'Acumule 2.000 XP' },
-  { id:'lv5',        icon:'🔓', name:'Nível 5',             desc:'Alcance o nível 5' },
+  { id:'xp5000',     icon:'🌠', name:'Estratosférico',      desc:'Acumule 5.000 XP' },
+  { id:'lv5',        icon:'🔓', name:'Nível 5',             desc:'Alcance o Nível 5 (domine 15 produtos)' },
+  { id:'lv10',       icon:'🎖️', name:'Nível 10',            desc:'Alcance o Nível 10 (domine 50 produtos)' },
   // ── Treino / Sessões ──
-  { id:'sess5',      icon:'📚', name:'Dedicado',            desc:'Complete 5 treinos' },
-  { id:'sess20',     icon:'🏋️', name:'Atleta',             desc:'Complete 20 treinos' },
-  { id:'allModes',   icon:'🎮', name:'Multiatleta',         desc:'Jogue todos os 12 modos pelo menos uma vez' },
+  { id:'sess5',      icon:'📚', name:'Dedicado',            desc:'Complete 5 sessões de treino' },
+  { id:'sess20',     icon:'🏋️', name:'Atleta',             desc:'Complete 20 sessões de treino' },
+  { id:'sess50',     icon:'🎽', name:'Maratonista',         desc:'Complete 50 sessões de treino' },
+  { id:'allModes',   icon:'🎮', name:'Multiatleta',         desc:'Jogue todos os 15 modos disponíveis pelo menos uma vez' },
   // ── Streak ──
   { id:'streak3',    icon:'📅', name:'3 Dias Seguidos',     desc:'Jogue 3 dias consecutivos' },
   { id:'streak7',    icon:'🗓️', name:'Semana Inteira',     desc:'Jogue 7 dias consecutivos' },
@@ -2841,9 +2847,10 @@ function checkAchs() {
   // ── Primeiros passos ──
   if (!S.achievements.includes('first') && (G.cor+G.wr) === 1 && G.cor===1) grant('first');
   const answeredSoFar = (S.totalAnswers||0) + G.cor + G.wr;
-  if (answeredSoFar >= 10)  grant('s10');
-  if (answeredSoFar >= 100) grant('s100');
-  if (answeredSoFar >= 500) grant('s500');
+  if (answeredSoFar >= 10)   grant('s10');
+  if (answeredSoFar >= 100)  grant('s100');
+  if (answeredSoFar >= 500)  grant('s500');
+  if (answeredSoFar >= 1000) grant('s1000');
 
   // ── Combos ──
   if (G.combo >= 5)  { grant('combo5');  if (G.combo === 5)  coinComboReward(5);  }
@@ -2869,22 +2876,30 @@ function checkAchs() {
   if (masteredCount >= 10)  grant('dom10');
   if (masteredCount >= 50)  grant('dom50');
   if (masteredCount >= 100) grant('dom100');
+  if (masteredCount >= 200) grant('dom200');
+  if (masteredCount >= 300) grant('dom300');
   if (masteredCount >= P.length && P.length > 0) grant('goat');
 
   // ── XP / Nível ──
-  if (S.xp >= 500)         grant('xp500');
-  if (S.xp >= 2000)        grant('xp2000');
-  if (levelOf(P.filter(p=>dominated(p.id)).length) >= 5) grant('lv5');
+  if (S.xp >= 500)  grant('xp500');
+  if (S.xp >= 2000) grant('xp2000');
+  if (S.xp >= 5000) grant('xp5000');
+  const curLv = levelOf(P.filter(p=>dominated(p.id)).length);
+  if (curLv >= 5)  grant('lv5');
+  if (curLv >= 10) grant('lv10');
 
   // ── Sessões ──
   if ((S.totalSessions||0) >= 5)  grant('sess5');
   if ((S.totalSessions||0) >= 20) grant('sess20');
+  if ((S.totalSessions||0) >= 50) grant('sess50');
 
-  // Todos os modos jogados
+  // Todos os modos jogados (15 modos)
   const playedModes = new Set((S.history||[]).map(h => h.mode));
-  const allModeLabels = ['Foto→Nome','Digitação','Flashcard','Sobrevivência',
-    '60 Segundos','Revisão','Caça à Foto','Silhueta','Contagem','Conecta','Par Perfeito','Sequência',
-    'Dupla ou Nada','Aleatório'];
+  const allModeLabels = [
+    'Foto→Nome','Digitação','Flashcard','Sobrevivência','60 Segundos',
+    'Revisão','Caça à Foto','Silhueta','Contagem','Conecta',
+    'Par Perfeito','Sequência','Dupla ou Nada','Acúmulo','Aleatório',
+  ];
   if (allModeLabels.every(m => playedModes.has(m))) grant('allModes');
 
   // ── Streak ──
